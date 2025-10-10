@@ -1,8 +1,9 @@
-import type { AgentMessage } from '@/types/agent';
+import type { AgentMessage, ToolPermission } from '@/types/agent';
 
 export interface SpawnAgentParams {
   prompt: string;
   directory: string;
+  toolPermissions?: ToolPermission; // Phase 2: Optional tool permissions
 }
 
 export interface SpawnAgentResult {

@@ -1,28 +1,62 @@
-import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem } from '@/types/agent';
+import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem, ToolPermission, AgentMetrics, AgentLifecycleState } from '@/types/agent';
+import { generateAgentName, validateAgentName, ensureUniqueName } from './agent-names';
+import { getDefaultToolPermission, validateToolPermission } from './tool-permissions';
 
 class AgentSessionManager {
   private sessions: Map<string, AgentSession> = new Map();
   private history: AgentHistoryItem[] = [];
-  private currentAgentId: string | null = null;
+  // Phase 2: Remove single-agent enforcement
+  private activeAgents: Map<string, AgentSession> = new Map(); // Track concurrent agents
   private readonly MAX_HISTORY = 10;
 
-  createSession(id: string, prompt: string, directory: string): AgentSession {
-    // Terminate current agent if one is running
-    if (this.currentAgentId) {
-      this.terminateSession(this.currentAgentId);
+  /**
+   * Phase 2: Create session with multi-agent support
+   * No longer terminates existing agents
+   */
+  createSession(
+    id: string,
+    prompt: string,
+    directory: string,
+    name?: string,
+    toolPermissions?: ToolPermission
+  ): AgentSession {
+    // Phase 2: Generate or validate agent name
+    let agentName = name || generateAgentName();
+
+    if (name) {
+      const validation = validateAgentName(name);
+      if (!validation.valid) {
+        throw new Error(validation.error);
+      }
+    }
+
+    // Ensure name uniqueness
+    const existingNames = new Set(
+      Array.from(this.activeAgents.values()).map(s => s.name)
+    );
+    agentName = ensureUniqueName(agentName, existingNames);
+
+    // Phase 2: Validate and apply tool permissions
+    const permissions = toolPermissions || getDefaultToolPermission();
+    const permValidation = validateToolPermission(permissions);
+    if (!permValidation.valid) {
+      throw new Error(permValidation.error);
     }
 
     const session: AgentSession = {
       id,
+      name: agentName,
       prompt,
       directory,
       status: 'running',
+      lifecycleState: 'running', // Phase 2
+      toolPermissions: permissions, // Phase 2
       startTime: Date.now(),
       messages: [],
     };
 
     this.sessions.set(id, session);
-    this.currentAgentId = id;
+    this.activeAgents.set(id, session); // Phase 2: Track in active agents
     return session;
   }
 
@@ -30,9 +64,117 @@ class AgentSessionManager {
     return this.sessions.get(id);
   }
 
+  /**
+   * Phase 2: Get all active agents (running or paused)
+   */
+  getAllActiveAgents(): AgentSession[] {
+    return Array.from(this.activeAgents.values());
+  }
+
+  /**
+   * Phase 2: Get agent metrics
+   */
+  getAgentMetrics(id: string): AgentMetrics | undefined {
+    const session = this.sessions.get(id);
+    if (!session) return undefined;
+
+    const now = Date.now();
+    const elapsedTime = session.endTime
+      ? session.endTime - session.startTime
+      : now - session.startTime;
+
+    return {
+      elapsedTime,
+      messageCount: session.messages.length,
+      lastActivityTime: session.messages.length > 0
+        ? session.messages[session.messages.length - 1].timestamp
+        : session.startTime
+    };
+  }
+
+  /**
+   * Phase 2: Pause agent execution
+   */
+  pauseAgent(id: string): void {
+    const session = this.activeAgents.get(id);
+    if (!session) {
+      throw new Error('Agent not found or not active');
+    }
+
+    if (session.lifecycleState !== 'running') {
+      throw new Error(`Cannot pause agent in state: ${session.lifecycleState}`);
+    }
+
+    session.lifecycleState = 'paused';
+    session.pausedTime = Date.now();
+  }
+
+  /**
+   * Phase 2: Resume paused agent
+   */
+  resumeAgent(id: string): void {
+    const session = this.activeAgents.get(id);
+    if (!session) {
+      throw new Error('Agent not found or not active');
+    }
+
+    if (session.lifecycleState !== 'paused') {
+      throw new Error(`Cannot resume agent in state: ${session.lifecycleState}`);
+    }
+
+    session.lifecycleState = 'running';
+    session.pausedTime = undefined;
+  }
+
+  /**
+   * Phase 2: Stop agent (graceful shutdown)
+   */
+  stopAgent(id: string): void {
+    const session = this.activeAgents.get(id);
+    if (!session) {
+      throw new Error('Agent not found or not active');
+    }
+
+    session.lifecycleState = 'stopped';
+    session.status = 'interrupted';
+    session.endTime = Date.now();
+    this.moveToHistory(id);
+  }
+
+  /**
+   * Phase 2: Rename agent
+   */
+  renameAgent(id: string, newName: string): void {
+    const session = this.sessions.get(id);
+    if (!session) {
+      throw new Error('Agent not found');
+    }
+
+    const validation = validateAgentName(newName);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    // Check uniqueness among active agents (excluding current agent)
+    const existingNames = new Set(
+      Array.from(this.activeAgents.values())
+        .filter(s => s.id !== id)
+        .map(s => s.name)
+    );
+
+    if (existingNames.has(newName)) {
+      throw new Error('Agent name already in use');
+    }
+
+    session.name = newName;
+  }
+
+  // Deprecated: Kept for backward compatibility but no longer enforces single agent
   getCurrentSession(): AgentSession | null {
-    if (!this.currentAgentId) return null;
-    return this.sessions.get(this.currentAgentId) || null;
+    // Return the most recently created active agent
+    const activeAgentsList = this.getAllActiveAgents();
+    if (activeAgentsList.length === 0) return null;
+    return activeAgentsList[activeAgentsList.length - 1];
   }
 
   addMessage(id: string, message: AgentMessage): void {
@@ -43,10 +185,12 @@ class AgentSessionManager {
       // Update status based on message type
       if (message.type === 'error') {
         session.status = 'error';
+        session.lifecycleState = 'error'; // Phase 2
         session.endTime = Date.now();
         this.moveToHistory(id);
       } else if (message.type === 'result') {
         session.status = 'completed';
+        session.lifecycleState = 'stopped'; // Phase 2
         session.endTime = Date.now();
         this.moveToHistory(id);
       }
@@ -64,21 +208,17 @@ class AgentSessionManager {
     }
   }
 
+  // Deprecated in Phase 2: Use stopAgent instead
   terminateSession(id: string): void {
-    const session = this.sessions.get(id);
-    if (session && session.status === 'running') {
-      session.status = 'interrupted';
-      session.endTime = Date.now();
-      this.moveToHistory(id);
-    }
-    if (this.currentAgentId === id) {
-      this.currentAgentId = null;
-    }
+    this.stopAgent(id);
   }
 
   private moveToHistory(id: string): void {
     const session = this.sessions.get(id);
     if (!session) return;
+
+    // Phase 2: Remove from active agents
+    this.activeAgents.delete(id);
 
     // Check if already in history to prevent duplicates
     const existingIndex = this.history.findIndex(item => item.id === id);
@@ -86,9 +226,11 @@ class AgentSessionManager {
       // Update existing history item
       this.history[existingIndex] = {
         id: session.id,
+        name: session.name, // Phase 2
         prompt: session.prompt,
         directory: session.directory,
         status: session.status,
+        toolPermissions: session.toolPermissions, // Phase 2
         startTime: session.startTime,
         endTime: session.endTime,
         messageCount: session.messages.length,
@@ -98,9 +240,11 @@ class AgentSessionManager {
 
     const historyItem: AgentHistoryItem = {
       id: session.id,
+      name: session.name, // Phase 2
       prompt: session.prompt,
       directory: session.directory,
       status: session.status,
+      toolPermissions: session.toolPermissions, // Phase 2
       startTime: session.startTime,
       endTime: session.endTime,
       messageCount: session.messages.length,
@@ -116,10 +260,6 @@ class AgentSessionManager {
       if (removedItem) {
         this.sessions.delete(removedItem.id);
       }
-    }
-
-    if (this.currentAgentId === id) {
-      this.currentAgentId = null;
     }
   }
 

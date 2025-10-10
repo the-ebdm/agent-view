@@ -15,12 +15,20 @@ export async function GET(
     );
   }
 
+  // Phase 2: Include metrics and lifecycle state
+  const metrics = sessionManager.getAgentMetrics(id);
+
   return NextResponse.json({
     id: session.id,
+    name: session.name,
     status: session.status,
+    lifecycleState: session.lifecycleState,
+    toolPermissions: session.toolPermissions,
     startTime: session.startTime,
     endTime: session.endTime,
+    pausedTime: session.pausedTime,
     directory: session.directory,
     messageCount: session.messages.length,
+    metrics,
   });
 }
