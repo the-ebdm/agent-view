@@ -13,7 +13,7 @@ interface AgentSpawnFormProps {
 
 export function AgentSpawnForm({ onSpawn, disabled }: AgentSpawnFormProps) {
   const [prompt, setPrompt] = useState('');
-  const [directory, setDirectory] = useState(process.cwd?.() || '/');
+  const [directory, setDirectory] = useState('/Users/ericmuir/Projects/agent-view');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

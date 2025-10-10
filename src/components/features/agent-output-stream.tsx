@@ -97,8 +97,12 @@ function MessageItem({ message }: { message: AgentMessage }) {
         {message.type === 'assistant' ? (
           <ReactMarkdown
             components={{
-              code({ node, inline, className, children, ...props }) {
+              code({ inline, className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '');
+                const codeString = Array.isArray(children)
+                  ? children.join('')
+                  : String(children);
+
                 return !inline && match ? (
                   <SyntaxHighlighter
                     style={oneDark}
@@ -106,7 +110,7 @@ function MessageItem({ message }: { message: AgentMessage }) {
                     PreTag="div"
                     {...props}
                   >
-                    {String(children).replace(/\n$/, '')}
+                    {codeString.replace(/\n$/, '')}
                   </SyntaxHighlighter>
                 ) : (
                   <code className={className} {...props}>
