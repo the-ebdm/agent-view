@@ -1,16 +1,16 @@
 // Phase 2: Active Agents Dashboard with card grid layout
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { AgentCard } from './agent-card';
-import { AgentInteractionModal } from './agent-interaction-modal';
-import { useActiveAgents } from '@/contexts/active-agents-context';
+import React, { useState } from "react";
+import { AgentCard } from "./agent-card";
+import { AgentInteractionModal } from "./agent-interaction-modal";
+import { useActiveAgents } from "@/contexts/active-agents-context";
 
 export function ActiveAgentsDashboard() {
   const { agents, isLoading, error } = useActiveAgents();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
-  const selectedAgent = agents.find(a => a.id === selectedAgentId);
+  const selectedAgent = agents.find((a) => a.id === selectedAgentId);
 
   // Dashboard grid view
   return (
@@ -20,7 +20,7 @@ export function ActiveAgentsDashboard() {
         <div>
           <h2 className="text-2xl font-bold">Active Agents</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {agents.length} {agents.length === 1 ? 'agent' : 'agents'} running
+            {agents.length} {agents.length === 1 ? "agent" : "agents"} running
           </p>
         </div>
 
@@ -42,23 +42,24 @@ export function ActiveAgentsDashboard() {
       )}
 
       {/* Loading State */}
-      {isLoading && agents.length === 0 && (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin text-4xl mb-2">⚙️</div>
-            <p className="text-gray-500 dark:text-gray-400">Loading agents...</p>
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!isLoading && agents.length === 0 && (
+      {agents.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
           <div className="text-6xl mb-4">🤖</div>
-          <h3 className="text-xl font-semibold mb-2">No Active Agents</h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-4">
-            Spawn an agent to get started
-          </p>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin text-4xl mb-2">⚙️</div>
+              <p className="text-gray-500 dark:text-gray-400">
+                Loading agents...
+              </p>
+            </div>
+          ) : (
+            <>
+              <h3 className="text-xl font-semibold mb-2">No Active Agents</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                Spawn an agent to get started
+              </p>
+            </>
+          )}
         </div>
       )}
 

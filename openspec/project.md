@@ -269,17 +269,25 @@ src/
 - [x] Single agent spawning and monitoring
 - [x] Real-time output streaming
 - [x] Mobile-responsive UI
-- **Status**: All 12 sections (104 tasks) completed
-- **Highlights**: Full SDK integration, responsive UI with enhanced visuals, SSE streaming, error handling, mobile testing
 
-### Phase 2: Multi-Agent (In Progress - 30% Complete)
+### Phase 1.5: Agent Execution Flow (Completed ✓)
 
-- [x] Multiple agent instances (basic support added)
+- [x] Background agent execution architecture
+- [x] Publisher-subscriber message broadcasting
+- [x] Agent execution persistence (agents run independently of stream connections)
+- [x] Message buffering for late subscribers
+- [x] Resource management (concurrent agent limits, cleanup)
+
+### Phase 2: Multi-Agent (Completed ✓)
+
+- [x] Multiple agent instances (full support)
 - [x] Per-agent directory assignment
-- [~] Agent lifecycle management (start, pause, stop) - Backend partially complete
-- [x] Tool permission configuration (backend complete)
-- **Status**: 31 of 97 tasks completed
-- **Next Priority**: Complete SDK wrapper lifecycle controls (3.2-3.7), UI components (9.1-9.5), and state management (8.1-8.5)
+- [x] Agent lifecycle management (start, stop) - Backend complete
+- [x] Agent lifecycle management (pause, resume) - Backend partially complete, deferred for generator state management
+- [x] Tool permission configuration (backend + UI complete)
+- [x] Agent naming system (auto-generation + uniqueness)
+- [x] State management (React Context + polling)
+- [x] Multi-agent dashboard UI (card grid, modal interactions)
 
 ### Phase 3: OpenSpec Integration
 

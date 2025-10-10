@@ -8,6 +8,7 @@ import { AgentHistoryList } from '@/components/features/agent-history-list';
 import { useAgentHistory } from '@/hooks/use-agent-history';
 import { ActiveAgentsProvider, useActiveAgents } from '@/contexts/active-agents-context';
 import { Button } from '@/components/ui/button';
+import { OpenSpecSection } from '@/components/openspec/openspec-section';
 
 function DashboardContent() {
   const { agents } = useActiveAgents();
@@ -88,9 +89,10 @@ function DashboardContent() {
             )}
           </div>
 
-          {/* Main Content - Agent Dashboard */}
-          <div className={`lg:col-span-3 ${(showSpawnForm || showHistory) ? 'hidden lg:block' : 'block'}`}>
+          {/* Main Content - Agent Dashboard & OpenSpec */}
+          <div className={`lg:col-span-3 space-y-6 ${(showSpawnForm || showHistory) ? 'hidden lg:block' : 'block'}`}>
             <ActiveAgentsDashboard />
+            <OpenSpecSection />
           </div>
         </div>
       </main>
