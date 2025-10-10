@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import type { AgentMessage } from '@/types/agent';
 import ReactMarkdown from 'react-markdown';
@@ -62,15 +62,127 @@ export function AgentOutputStream({ messages, autoScroll = true }: AgentOutputSt
         onScroll={handleScroll}
         className="space-y-3 max-h-[600px] overflow-y-auto -m-6 p-6"
       >
-        {messages.map((message, index) => (
-          <MessageItem key={index} message={message} />
+        {groupMessages(messages).map((item, index) => (
+          <MessageItem key={index} item={item} />
         ))}
       </div>
     </Card>
   );
 }
 
-function MessageItem({ message }: { message: AgentMessage }) {
+// Group tool_use messages with their corresponding tool_result
+type MessageGroup =
+  | { type: 'single'; message: AgentMessage }
+  | { type: 'tool'; toolUse: AgentMessage; toolResult?: AgentMessage };
+
+function groupMessages(messages: AgentMessage[]): MessageGroup[] {
+  const groups: MessageGroup[] = [];
+  let i = 0;
+
+  while (i < messages.length) {
+    const message = messages[i];
+
+    if (message.type === 'tool_use') {
+      // Look ahead for the next tool_result
+      const nextMessage = messages[i + 1];
+      if (nextMessage && nextMessage.type === 'tool_result') {
+        groups.push({ type: 'tool', toolUse: message, toolResult: nextMessage });
+        i += 2; // Skip both messages
+      } else {
+        groups.push({ type: 'tool', toolUse: message });
+        i += 1;
+      }
+    } else if (message.type === 'tool_result') {
+      // Orphaned tool result (shouldn't happen, but handle it)
+      groups.push({ type: 'single', message });
+      i += 1;
+    } else {
+      groups.push({ type: 'single', message });
+      i += 1;
+    }
+  }
+
+  return groups;
+}
+
+function MessageItem({ item }: { item: MessageGroup }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (item.type === 'tool') {
+    return <ToolCallItem toolUse={item.toolUse} toolResult={item.toolResult} isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} />;
+  }
+
+  return <SingleMessageItem message={item.message} />;
+}
+
+function ToolCallItem({
+  toolUse,
+  toolResult,
+  isExpanded,
+  onToggle
+}: {
+  toolUse: AgentMessage;
+  toolResult?: AgentMessage;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-200 dark:border-purple-700 border-t border-r border-b rounded-lg transition-all hover:shadow-md">
+      <button
+        onClick={onToggle}
+        className="w-full p-3 text-left flex items-center justify-between hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors"
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-lg">🔧</span>
+          <span className="font-mono text-sm text-purple-600 dark:text-purple-400 font-semibold truncate">
+            {toolUse.toolName}
+          </span>
+          {toolResult && (
+            <span className="text-xs text-green-600 dark:text-green-400 ml-2">✓</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+            {new Date(toolUse.timestamp).toLocaleTimeString()}
+          </span>
+          <span className="text-gray-500 dark:text-gray-400">
+            {isExpanded ? '▼' : '▶'}
+          </span>
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="px-3 pb-3 space-y-3">
+          {toolUse.toolParams && (
+            <div>
+              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                Parameters:
+              </div>
+              <pre className="text-xs bg-black/10 dark:bg-white/10 p-2 rounded overflow-x-auto font-mono">
+                {JSON.stringify(toolUse.toolParams, null, 2)}
+              </pre>
+            </div>
+          )}
+
+          {toolResult && (
+            <div>
+              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                Result:
+              </div>
+              <pre className="text-xs bg-green-50 dark:bg-green-900/20 p-2 rounded overflow-x-auto font-mono max-h-48 overflow-y-auto">
+                {typeof toolResult.content === 'string'
+                  ? toolResult.content
+                  : JSON.stringify(toolResult.content, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SingleMessageItem({ message }: { message: AgentMessage }) {
   const typeColors = {
     assistant: 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-700',
     tool_use: 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-700',
@@ -106,27 +218,6 @@ function MessageItem({ message }: { message: AgentMessage }) {
           {new Date(message.timestamp).toLocaleTimeString()}
         </span>
       </div>
-
-      {message.type === 'tool_use' && message.toolName && (
-        <div className="mb-3 p-3 bg-black/5 dark:bg-white/5 rounded-md">
-          <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-1">
-            Tool:
-          </div>
-          <div className="font-mono text-sm text-purple-600 dark:text-purple-400 mb-2">
-            {message.toolName}
-          </div>
-          {message.toolParams && (
-            <>
-              <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
-                Parameters:
-              </div>
-              <pre className="text-xs bg-black/10 dark:bg-white/10 p-2 rounded overflow-x-auto font-mono">
-                {JSON.stringify(message.toolParams, null, 2)}
-              </pre>
-            </>
-          )}
-        </div>
-      )}
 
       <div className="prose prose-sm dark:prose-invert max-w-none">
         {message.type === 'assistant' ? (

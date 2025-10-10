@@ -76,30 +76,15 @@ export async function* streamAgentMessages(
   agentQuery: AsyncGenerator<unknown, void, unknown>
 ): AsyncGenerator<AgentMessage, void, unknown> {
   try {
-    let rawMessageCount = 0;
     for await (const message of agentQuery) {
-      rawMessageCount++;
-      // Process the message from SDK
       const sdkMessage = message as SDKMessage;
-
-      // Log first few messages with full structure to understand the format
-      if (rawMessageCount <= 5) {
-        console.log('[StreamHandler] Message', rawMessageCount, 'full structure:', JSON.stringify(sdkMessage, null, 2));
-      } else {
-        console.log('[StreamHandler] Raw message', rawMessageCount, '- type:', sdkMessage?.type, 'subtype:', sdkMessage?.subtype);
-      }
-
       const agentMessage = processSDKMessage(sdkMessage);
 
       // Only yield if we got a valid message (some SDK messages are skipped)
       if (agentMessage) {
-        console.log('[StreamHandler] Yielding:', agentMessage.type);
         yield agentMessage;
-      } else {
-        console.log('[StreamHandler] Skipped message type:', sdkMessage?.type);
       }
     }
-    console.log('[StreamHandler] Query generator completed after', rawMessageCount, 'raw messages');
   } catch (error) {
     console.error('[StreamHandler] Error in stream:', error);
     // Yield error message
