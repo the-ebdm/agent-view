@@ -99,9 +99,12 @@ function MessageItem({ message }: { message: AgentMessage }) {
             components={{
               code({ inline, className, children, ...props }) {
                 const match = /language-(\w+)/.exec(className || '');
+                // Convert children to string - handle both arrays and single values
                 const codeString = Array.isArray(children)
                   ? children.join('')
-                  : String(children);
+                  : typeof children === 'string'
+                  ? children
+                  : String(children || '');
 
                 return !inline && match ? (
                   <SyntaxHighlighter
@@ -114,16 +117,22 @@ function MessageItem({ message }: { message: AgentMessage }) {
                   </SyntaxHighlighter>
                 ) : (
                   <code className={className} {...props}>
-                    {children}
+                    {codeString}
                   </code>
                 );
               },
             }}
           >
-            {message.content}
+            {typeof message.content === 'string'
+              ? message.content
+              : JSON.stringify(message.content, null, 2)}
           </ReactMarkdown>
         ) : (
-          <p className="whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap">
+            {typeof message.content === 'string'
+              ? message.content
+              : JSON.stringify(message.content, null, 2)}
+          </p>
         )}
       </div>
     </div>
