@@ -77,28 +77,45 @@ type MessageGroup =
 
 function groupMessages(messages: AgentMessage[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
-  let i = 0;
 
-  while (i < messages.length) {
-    const message = messages[i];
+  // First pass: collect all tool_use messages
+  const toolUseQueue: AgentMessage[] = [];
+  const toolResultQueue: AgentMessage[] = [];
 
+  for (const message of messages) {
     if (message.type === 'tool_use') {
-      // Look ahead for the next tool_result
-      const nextMessage = messages[i + 1];
-      if (nextMessage && nextMessage.type === 'tool_result') {
-        groups.push({ type: 'tool', toolUse: message, toolResult: nextMessage });
-        i += 2; // Skip both messages
-      } else {
-        groups.push({ type: 'tool', toolUse: message });
-        i += 1;
-      }
+      toolUseQueue.push(message);
     } else if (message.type === 'tool_result') {
-      // Orphaned tool result (shouldn't happen, but handle it)
-      groups.push({ type: 'single', message });
-      i += 1;
+      toolResultQueue.push(message);
     } else {
+      // Non-tool messages: flush any pending tools first
+      while (toolUseQueue.length > 0 || toolResultQueue.length > 0) {
+        const toolUse = toolUseQueue.shift();
+        const toolResult = toolResultQueue.shift();
+
+        if (toolUse) {
+          groups.push({ type: 'tool', toolUse, toolResult });
+        } else if (toolResult) {
+          // Orphaned result
+          groups.push({ type: 'single', message: toolResult });
+        }
+      }
+
+      // Add the non-tool message
       groups.push({ type: 'single', message });
-      i += 1;
+    }
+  }
+
+  // Flush any remaining tools at the end
+  while (toolUseQueue.length > 0 || toolResultQueue.length > 0) {
+    const toolUse = toolUseQueue.shift();
+    const toolResult = toolResultQueue.shift();
+
+    if (toolUse) {
+      groups.push({ type: 'tool', toolUse, toolResult });
+    } else if (toolResult) {
+      // Orphaned result
+      groups.push({ type: 'single', message: toolResult });
     }
   }
 

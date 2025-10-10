@@ -78,10 +78,17 @@ export async function* streamAgentMessages(
   try {
     for await (const message of agentQuery) {
       const sdkMessage = message as SDKMessage;
+
+      // Debug: log the message type
+      if (sdkMessage.type === 'user' || sdkMessage.type === 'assistant') {
+        console.log('[StreamHandler] Processing:', sdkMessage.type, 'with', sdkMessage.message?.content?.length || 0, 'content blocks');
+      }
+
       const agentMessage = processSDKMessage(sdkMessage);
 
       // Only yield if we got a valid message (some SDK messages are skipped)
       if (agentMessage) {
+        console.log('[StreamHandler] Yielding:', agentMessage.type, agentMessage.toolName || '');
         yield agentMessage;
       }
     }
