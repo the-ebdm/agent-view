@@ -6,7 +6,8 @@
       "Bash(openspec validate:*)",
       "Bash(npm install:*)",
       "Bash(curl:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

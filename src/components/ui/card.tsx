@@ -1,13 +1,13 @@
 import React from 'react';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   header?: React.ReactNode;
   footer?: React.ReactNode;
 }
 
-export function Card({ children, className = '', header, footer }: CardProps) {
+export function Card({ children, className = '', header, footer, ...props }: CardProps) {
   return (
     <div
       className={`
@@ -16,6 +16,7 @@ export function Card({ children, className = '', header, footer }: CardProps) {
         rounded-lg shadow-sm
         ${className}
       `}
+      {...props}
     >
       {header && (
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">

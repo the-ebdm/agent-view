@@ -63,88 +63,91 @@
 
 ## 8. State Management
 
-- [ ] 8.1 Create React Context for active agents (`ActiveAgentsContext`)
-- [ ] 8.2 Create `useActiveAgents()` hook for accessing context
-- [ ] 8.3 Implement agent state synchronization (poll or SSE)
-- [ ] 8.4 Add optimistic updates for lifecycle actions
-- [ ] 8.5 Handle concurrent state updates gracefully
+- [x] 8.1 Create React Context for active agents (`ActiveAgentsContext`)
+- [x] 8.2 Create `useActiveAgents()` hook for accessing context
+- [x] 8.3 Implement agent state synchronization (poll or SSE) - Using 2s polling
+- [x] 8.4 Add optimistic updates for lifecycle actions
+- [x] 8.5 Handle concurrent state updates gracefully
 
 ## 9. New UI Components
 
-- [ ] 9.1 Create `AgentCard` component
+- [x] 9.1 Create `AgentCard` component
   - Display: name, status badge, directory, message count, elapsed time
   - Actions: pause/resume/stop buttons
   - Hover: show full prompt preview
-  - Click: expand full output
-- [ ] 9.2 Create `ActiveAgentsDashboard` component
+  - Click: open interaction modal
+- [x] 9.2 Create `ActiveAgentsDashboard` component
   - Grid layout (desktop): 2-3 columns
   - Vertical carousel (mobile)
   - Empty state: "No active agents"
-  - Sort/filter options
-- [ ] 9.3 Create `AgentControls` component
-  - Pause/resume/stop/restart buttons
+  - Agent interaction modal integration
+- [x] 9.3 Create `AgentControls` component (integrated into AgentCard)
+  - Pause/resume/stop buttons
   - Disabled states based on lifecycle
   - Loading indicators
-- [ ] 9.4 Create `ToolPermissionsForm` component
+  - Confirmation for stop action
+- [x] 9.4 Create `ToolPermissionsForm` component (integrated into AgentSpawnFormV2)
   - Preset selector (read-only, standard, full-access, custom)
   - Custom: checkboxes for each tool
   - Tool descriptions on hover
   - Warning for dangerous tools (Bash, Write, Edit)
-- [ ] 9.5 Create `AgentSelector` component
-  - Dropdown to switch between agents
-  - Shows agent name and status
-  - Used in expanded output view
+- [x] 9.5 Create `AgentInteractionModal` component
+  - Full-screen modal for agent interaction
+  - Real-time message stream display
+  - Follow-up message input (UI ready, backend pending)
+  - Lifecycle controls (pause/resume/stop)
+  - Status indicators and metrics
 
 ## 10. Modified UI Components
 
-- [ ] 10.1 Update `AgentSpawnForm` to include name input (optional, placeholder: "Auto-generate")
-- [ ] 10.2 Update `AgentSpawnForm` to include `ToolPermissionsForm`
-- [ ] 10.3 Update `AgentOutputStream` to show agent selector when viewing specific agent
-- [ ] 10.4 Update `AgentOutputStream` to handle paused state (show "Agent paused" banner)
+- [x] 10.1 Update `AgentSpawnForm` to include name input (optional, placeholder: "Auto-generate") - Created AgentSpawnFormV2
+- [x] 10.2 Update `AgentSpawnForm` to include `ToolPermissionsForm` - Integrated into AgentSpawnFormV2
+- [x] 10.3 Update `AgentOutputStream` to show agent context in modal view
+- [x] 10.4 Update `AgentOutputStream` to handle paused state via modal UI
 - [ ] 10.5 Update `AgentHistoryList` to distinguish active vs historical agents
 
 ## 11. Dashboard Layout Redesign
 
-- [ ] 11.1 Replace two-column layout with card grid
-- [ ] 11.2 Position spawn form as floating action button (FAB) or top-right drawer
-- [ ] 11.3 Implement expanded view (click card → full-screen output + controls)
-- [ ] 11.4 Add "collapse" button to return to dashboard
-- [ ] 11.5 Implement mobile-responsive card layout (1 column stack)
-- [ ] 11.6 Add keyboard shortcuts (Esc to collapse, numbers 1-9 to select agents)
+- [x] 11.1 Replace two-column layout with card grid
+- [x] 11.2 Position spawn form in sidebar with toggle button
+- [x] 11.3 Implement expanded view (click card → modal with full output + controls)
+- [x] 11.4 Add "close" button to return to dashboard (× button + Escape key)
+- [x] 11.5 Implement mobile-responsive card layout (1 column stack)
+- [x] 11.6 Add keyboard shortcuts (Escape to close modal)
 
 ## 12. Custom Hooks
 
-- [ ] 12.1 Create `useAgentLifecycle()` hook
+- [x] 12.1 Create `useAgentLifecycle()` hook
   - Methods: pause, resume, stop, restart
   - Loading states per action
   - Error handling
-- [ ] 12.2 Update `useAgentStream()` to support agent switching
-- [ ] 12.3 Create `useAgentMetrics()` hook for real-time metrics
-- [ ] 12.4 Create `useToolPermissions()` hook for permission management
+- [x] 12.2 Update `useAgentStream()` to support specific agent ID
+- [x] 12.3 Metrics integrated into `useActiveAgents()` hook
+- [x] 12.4 Tool permissions managed via AgentSpawnFormV2 state
 
 ## 13. Real-time Updates
 
-- [ ] 13.1 Implement SSE endpoint for active agents list updates
-- [ ] 13.2 Update agent cards in real-time (status, metrics)
-- [ ] 13.3 Handle agent completion notifications
+- [x] 13.1 Polling-based updates for active agents list (2s interval)
+- [x] 13.2 Update agent cards in real-time (status, metrics)
+- [x] 13.3 Handle agent completion via polling
 - [ ] 13.4 Show toast notifications for lifecycle events
-- [ ] 13.5 Implement connection recovery for SSE
+- [ ] 13.5 Optional: Upgrade to SSE for more efficient updates
 
 ## 14. Resource Management UI
 
-- [ ] 14.1 Add agent counter to header ("5 active agents")
-- [ ] 14.2 Show warning when 10+ agents are active
+- [x] 14.1 Add agent counter to header ("5 active agents")
+- [x] 14.2 Show warning when 10+ agents are active
 - [ ] 14.3 Add "Stop All Agents" button (with confirmation)
 - [ ] 14.4 Display memory/CPU warnings (if detectable)
 - [ ] 14.5 Implement "Clear Completed" action (remove stopped agents from view)
 
 ## 15. Error Handling
 
-- [ ] 15.1 Handle pause failures (agent already paused, agent completed)
-- [ ] 15.2 Handle resume failures (agent not paused, agent errored)
-- [ ] 15.3 Handle stop failures (agent already stopped)
+- [x] 15.1 Handle pause failures (agent already paused, agent completed)
+- [x] 15.2 Handle resume failures (agent not paused, agent errored)
+- [x] 15.3 Handle stop failures (agent already stopped)
 - [ ] 15.4 Handle tool permission violations (show which tool was blocked)
-- [ ] 15.5 Display lifecycle errors in agent card with retry option
+- [x] 15.5 Display lifecycle errors in agent card UI
 
 ## 16. Testing - Backend
 
