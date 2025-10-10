@@ -12,8 +12,6 @@ export function ActiveAgentsDashboard() {
 
   const selectedAgent = agents.find(a => a.id === selectedAgentId);
 
-  console.log('Dashboard render:', { selectedAgentId, selectedAgent: selectedAgent?.name, totalAgents: agents.length });
-
   // Dashboard grid view
   return (
     <div className="space-y-6">
@@ -72,10 +70,7 @@ export function ActiveAgentsDashboard() {
               key={agent.id}
               agent={agent}
               metrics={agent.metrics}
-              onOpenModal={() => {
-                console.log('Opening modal for agent:', agent.id, agent.name);
-                setSelectedAgentId(agent.id);
-              }}
+              onOpenModal={() => setSelectedAgentId(agent.id)}
             />
           ))}
         </div>

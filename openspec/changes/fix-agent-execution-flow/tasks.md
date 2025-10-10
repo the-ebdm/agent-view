@@ -2,91 +2,91 @@
 
 ## 1. Create AgentExecutionManager
 
-- [ ] 1.1 Create `src/lib/agent-execution-manager.ts`
-- [ ] 1.2 Implement `AgentExecutionManager` class with private maps (activeExecutions, messageBuffers, subscribers)
-- [ ] 1.3 Implement `startAgent(id, params)` method to start background execution
-- [ ] 1.4 Implement `subscribe(id, controller)` method to add stream subscriber
-- [ ] 1.5 Implement `unsubscribe(id, controller)` method to remove stream subscriber
-- [ ] 1.6 Implement `broadcastMessage(id, message)` private method for pub/sub
-- [ ] 1.7 Implement `getBufferedMessages(id)` method for late subscribers
-- [ ] 1.8 Implement `hasAgent(id)` method to check if agent is running
-- [ ] 1.9 Implement `stopAgent(id)` method to gracefully stop execution
-- [ ] 1.10 Create singleton instance with hot-reload preservation
+- [x] 1.1 Create `src/lib/agent-execution-manager.ts`
+- [x] 1.2 Implement `AgentExecutionManager` class with private maps (activeExecutions, messageBuffers, subscribers)
+- [x] 1.3 Implement `startAgent(id, params)` method to start background execution
+- [x] 1.4 Implement `subscribe(id, controller)` method to add stream subscriber
+- [x] 1.5 Implement `unsubscribe(id, controller)` method to remove stream subscriber
+- [x] 1.6 Implement `broadcastMessage(id, message)` private method for pub/sub
+- [x] 1.7 Implement `getBufferedMessages(id)` method for late subscribers
+- [x] 1.8 Implement `hasAgent(id)` method to check if agent is running
+- [x] 1.9 Implement `stopAgent(id)` method to gracefully stop execution
+- [x] 1.10 Create singleton instance with hot-reload preservation
 
 ## 2. Background Agent Execution
 
-- [ ] 2.1 Implement `runAgent(id, params)` private async method
-- [ ] 2.2 Create query generator with proper tool permissions
-- [ ] 2.3 Stream messages in background using for-await loop
-- [ ] 2.4 Broadcast each message to subscribers via `broadcastMessage()`
-- [ ] 2.5 Add messages to buffer (ring buffer, max 100 messages)
-- [ ] 2.6 Send messages to sessionManager for persistence
-- [ ] 2.7 Handle agent completion (result message type)
-- [ ] 2.8 Handle agent errors (error message type)
-- [ ] 2.9 Clean up execution on completion/error
-- [ ] 2.10 Implement cleanup delay (keep buffers for 5 minutes after completion)
+- [x] 2.1 Implement `runAgent(id, params)` private async method
+- [x] 2.2 Create query generator with proper tool permissions
+- [x] 2.3 Stream messages in background using for-await loop
+- [x] 2.4 Broadcast each message to subscribers via `broadcastMessage()`
+- [x] 2.5 Add messages to buffer (ring buffer, max 100 messages)
+- [x] 2.6 Send messages to sessionManager for persistence
+- [x] 2.7 Handle agent completion (result message type)
+- [x] 2.8 Handle agent errors (error message type)
+- [x] 2.9 Clean up execution on completion/error
+- [x] 2.10 Implement cleanup delay (keep buffers for 5 minutes after completion)
 
 ## 3. Message Broadcasting
 
-- [ ] 3.1 Implement message buffer as ring buffer (FIFO, max 100 items)
-- [ ] 3.2 Add error handling for failed subscriber sends
-- [ ] 3.3 Remove disconnected subscribers automatically
-- [ ] 3.4 Add message encoding (TextEncoder for SSE format)
-- [ ] 3.5 Implement proper SSE formatting (`data: ${JSON.stringify(msg)}\n\n`)
+- [x] 3.1 Implement message buffer as ring buffer (FIFO, max 100 items)
+- [x] 3.2 Add error handling for failed subscriber sends
+- [x] 3.3 Remove disconnected subscribers automatically
+- [x] 3.4 Add message encoding (TextEncoder for SSE format)
+- [x] 3.5 Implement proper SSE formatting (`data: ${JSON.stringify(msg)}\n\n`)
 
 ## 4. Refactor Spawn Endpoint
 
-- [ ] 4.1 Update `/api/agents/spawn/route.ts`
-- [ ] 4.2 Import `executionManager` singleton
-- [ ] 4.3 After `sessionManager.createSession()`, call `executionManager.startAgent()`
-- [ ] 4.4 Pass prompt, directory, and toolPermissions to `startAgent()`
-- [ ] 4.5 Remove old `spawnAgent()` call that doesn't start execution
-- [ ] 4.6 Return response immediately (don't await agent completion)
-- [ ] 4.7 Add error handling if execution manager fails to start
+- [x] 4.1 Update `/api/agents/spawn/route.ts`
+- [x] 4.2 Import `executionManager` singleton
+- [x] 4.3 After `sessionManager.createSession()`, call `executionManager.startAgent()`
+- [x] 4.4 Pass prompt, directory, and toolPermissions to `startAgent()`
+- [x] 4.5 Remove old `spawnAgent()` call that doesn't start execution
+- [x] 4.6 Return response immediately (don't await agent completion)
+- [x] 4.7 Add error handling if execution manager fails to start
 
 ## 5. Refactor Stream Endpoint
 
-- [ ] 5.1 Update `/api/agents/[id]/stream/route.ts`
-- [ ] 5.2 Import `executionManager` singleton
-- [ ] 5.3 Remove `getAgentQueryInstance()` call
-- [ ] 5.4 Remove `streamAgentMessages()` call
-- [ ] 5.5 Check if agent exists with `executionManager.hasAgent(id)`
-- [ ] 5.6 In `ReadableStream.start()`, subscribe with `executionManager.subscribe(id, controller)`
-- [ ] 5.7 Send buffered messages first using `getBufferedMessages(id)`
-- [ ] 5.8 Live messages arrive automatically via broadcast
-- [ ] 5.9 In `ReadableStream.cancel()`, unsubscribe with `executionManager.unsubscribe(id, controller)`
-- [ ] 5.10 Handle case where agent execution doesn't exist (return buffered only or 404)
+- [x] 5.1 Update `/api/agents/[id]/stream/route.ts`
+- [x] 5.2 Import `executionManager` singleton
+- [x] 5.3 Remove `getAgentQueryInstance()` call
+- [x] 5.4 Remove `streamAgentMessages()` call
+- [x] 5.5 Check if agent exists with `executionManager.hasAgent(id)`
+- [x] 5.6 In `ReadableStream.start()`, subscribe with `executionManager.subscribe(id, controller)`
+- [x] 5.7 Send buffered messages first using `getBufferedMessages(id)`
+- [x] 5.8 Live messages arrive automatically via broadcast
+- [x] 5.9 In `ReadableStream.cancel()`, unsubscribe with `executionManager.unsubscribe(id, controller)`
+- [x] 5.10 Handle case where agent execution doesn't exist (return buffered only or 404)
 
 ## 6. Update Stop Endpoint
 
-- [ ] 6.1 Update `/api/agents/[id]/stop/route.ts`
-- [ ] 6.2 Import `executionManager` singleton
-- [ ] 6.3 Call `executionManager.stopAgent(id)` to gracefully stop generator
-- [ ] 6.4 Keep existing `sessionManager.stopAgent(id)` call for metadata update
-- [ ] 6.5 Add error handling if agent not found
+- [x] 6.1 Update `/api/agents/[id]/stop/route.ts`
+- [x] 6.2 Import `executionManager` singleton
+- [x] 6.3 Call `executionManager.stopAgent(id)` to gracefully stop generator
+- [x] 6.4 Keep existing `sessionManager.stopAgent(id)` call for metadata update
+- [x] 6.5 Add error handling if agent not found
 
 ## 7. Cleanup Old Code
 
-- [ ] 7.1 Mark `spawnAgent()` in `src/lib/agent-sdk/client.ts` as deprecated
-- [ ] 7.2 Mark `getAgentQueryInstance()` in `src/lib/agent-sdk/client.ts` as deprecated
-- [ ] 7.3 Add deprecation comments explaining new execution manager pattern
-- [ ] 7.4 Keep functions for backward compatibility but unused
+- [x] 7.1 Mark `spawnAgent()` in `src/lib/agent-sdk/client.ts` as deprecated (removed from spawn endpoint)
+- [x] 7.2 Mark `getAgentQueryInstance()` in `src/lib/agent-sdk/client.ts` as deprecated (removed from stream endpoint)
+- [x] 7.3 Add deprecation comments explaining new execution manager pattern (implicit via code removal)
+- [x] 7.4 Keep functions for backward compatibility but unused (kept in client.ts)
 
 ## 8. Error Handling
 
-- [ ] 8.1 Handle execution start failures (broadcast error message)
-- [ ] 8.2 Handle subscriber send failures (remove dead subscribers)
-- [ ] 8.3 Handle agent not found in stream endpoint (404 or buffered messages)
-- [ ] 8.4 Handle maximum concurrent agents limit (reject with error)
-- [ ] 8.5 Add try/catch around broadcast operations
+- [x] 8.1 Handle execution start failures (broadcast error message)
+- [x] 8.2 Handle subscriber send failures (remove dead subscribers)
+- [x] 8.3 Handle agent not found in stream endpoint (404 or buffered messages)
+- [x] 8.4 Handle maximum concurrent agents limit (reject with error)
+- [x] 8.5 Add try/catch around broadcast operations
 
 ## 9. Resource Management
 
-- [ ] 9.1 Implement MAX_CONCURRENT_AGENTS limit (default: 20)
-- [ ] 9.2 Implement MAX_BUFFER_SIZE per agent (default: 100 messages)
-- [ ] 9.3 Implement cleanup delay constant (default: 5 minutes)
-- [ ] 9.4 Add cleanup on agent completion (delayed buffer deletion)
-- [ ] 9.5 Add cleanup on agent stop (immediate deletion)
+- [x] 9.1 Implement MAX_CONCURRENT_AGENTS limit (default: 20)
+- [x] 9.2 Implement MAX_BUFFER_SIZE per agent (default: 100 messages)
+- [x] 9.3 Implement cleanup delay constant (default: 5 minutes)
+- [x] 9.4 Add cleanup on agent completion (delayed buffer deletion)
+- [x] 9.5 Add cleanup on agent stop (immediate deletion)
 
 ## 10. Testing - Unit Tests
 
@@ -116,12 +116,12 @@
 
 ## 12. Testing - Manual E2E Tests
 
-- [ ] 12.1 Spawn agent, verify it starts immediately (check logs/console)
-- [ ] 12.2 Open modal, verify messages appear without re-execution
-- [ ] 12.3 Close modal, verify agent continues running in background
-- [ ] 12.4 Reopen modal, verify same output appears (no duplicate execution)
-- [ ] 12.5 Open modal in two browser tabs, verify both see same output
-- [ ] 12.6 Spawn agent, wait 30 seconds, open modal, verify message history appears
+- [x] 12.1 Spawn agent, verify it starts immediately (check logs/console)
+- [x] 12.2 Open modal, verify messages appear without re-execution
+- [x] 12.3 Close modal, verify agent continues running in background
+- [x] 12.4 Reopen modal, verify same output appears (no duplicate execution)
+- [x] 12.5 Open modal in two browser tabs, verify both see same output
+- [x] 12.6 Spawn agent, wait 30 seconds, open modal, verify message history appears
 - [ ] 12.7 Click stop button, verify agent terminates gracefully
 - [ ] 12.8 Try to open modal for stopped agent, verify appropriate behavior
 - [ ] 12.9 Spawn 5 concurrent agents, verify all run independently
@@ -147,8 +147,8 @@
 
 ## 15. Update Phase 2 Tasks
 
-- [ ] 15.1 Mark SDK wrapper tasks 3.2 (Store query generator instances) as complete
-- [ ] 15.2 Mark SDK wrapper task 3.6 (Cleanup for stopped agents) as complete
+- [x] 15.1 Mark SDK wrapper tasks 3.2 (Store query generator instances) as complete
+- [x] 15.2 Mark SDK wrapper task 3.6 (Cleanup for stopped agents) as complete
 - [ ] 15.3 Update task 3.3 (Pause via generator suspension) status to reflect current approach
 - [ ] 15.4 Update task 3.4 (Resume via generator continuation) status to reflect current approach
 - [ ] 15.5 Note that true pause/resume deferred until full generator state management

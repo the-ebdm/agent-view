@@ -1,6 +1,7 @@
 // Phase 2: Stop agent (graceful shutdown)
 import { NextResponse } from 'next/server';
 import { sessionManager } from '@/lib/agent-session-manager';
+import { executionManager } from '@/lib/agent-execution-manager';
 
 export async function POST(
   request: Request,
@@ -9,6 +10,10 @@ export async function POST(
   try {
     const { id } = params;
 
+    // Stop execution via execution manager (gracefully closes generator)
+    await executionManager.stopAgent(id);
+
+    // Update session metadata
     sessionManager.stopAgent(id);
 
     const session = sessionManager.getSession(id);

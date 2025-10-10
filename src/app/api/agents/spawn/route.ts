@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { spawnAgent } from '@/lib/agent-sdk/client';
 import { sessionManager } from '@/lib/agent-session-manager';
+import { executionManager } from '@/lib/agent-execution-manager';
 import type { ToolPermission } from '@/types/agent';
 
 // Phase 2: Updated schema with name and toolPermissions
@@ -30,22 +30,29 @@ export async function POST(request: Request) {
 
     const { prompt, directory, name, toolPermissions } = validation.data;
 
-    // Spawn agent
-    const result = await spawnAgent({ prompt, directory, toolPermissions });
+    // Generate unique agent ID
+    const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Phase 2: Create session with name and permissions
     const session = sessionManager.createSession(
-      result.id,
+      agentId,
       prompt,
       directory,
       name,
       toolPermissions as ToolPermission | undefined
     );
 
+    // Start agent execution in background
+    await executionManager.startAgent(agentId, {
+      prompt,
+      directory,
+      toolPermissions: toolPermissions as ToolPermission | undefined,
+    });
+
     return NextResponse.json({
-      id: result.id,
+      id: agentId,
       name: session.name,
-      status: result.status,
+      status: 'running',
       lifecycleState: session.lifecycleState,
       toolPermissions: session.toolPermissions,
     });
