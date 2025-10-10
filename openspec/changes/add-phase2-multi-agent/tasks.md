@@ -43,7 +43,7 @@
 - [x] 5.2 Create `/api/agents/[id]/pause` (POST) - pause agent
 - [x] 5.3 Create `/api/agents/[id]/resume` (POST) - resume agent
 - [x] 5.4 Create `/api/agents/[id]/stop` (POST) - stop agent
-- [ ] 5.5 Create `/api/agents/[id]/restart` (POST) - restart with same config
+- [x] 5.5 Create `/api/agents/[id]/restart` (POST) - restart with same config
 - [x] 5.6 Create `/api/agents/[id]/rename` (PUT) - update agent name
 
 ## 6. API Routes - Modified Endpoints
