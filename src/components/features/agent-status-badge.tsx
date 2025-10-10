@@ -6,19 +6,25 @@ interface AgentStatusBadgeProps {
 }
 
 export function AgentStatusBadge({ status }: AgentStatusBadgeProps) {
-  const statusConfig: Record<AgentStatus, { variant: 'gray' | 'blue' | 'green' | 'red' | 'yellow'; label: string; pulse?: boolean }> = {
-    idle: { variant: 'gray', label: 'Idle' },
-    running: { variant: 'blue', label: 'Running', pulse: true },
-    completed: { variant: 'green', label: 'Completed' },
-    error: { variant: 'red', label: 'Error' },
-    interrupted: { variant: 'yellow', label: 'Interrupted' },
+  const statusConfig: Record<
+    AgentStatus,
+    { variant: 'gray' | 'blue' | 'green' | 'red' | 'yellow'; label: string; icon: string; pulse?: boolean }
+  > = {
+    idle: { variant: 'gray', label: 'Idle', icon: '⏸️' },
+    running: { variant: 'blue', label: 'Running', icon: '⚡', pulse: true },
+    completed: { variant: 'green', label: 'Completed', icon: '✓' },
+    error: { variant: 'red', label: 'Error', icon: '✗' },
+    interrupted: { variant: 'yellow', label: 'Interrupted', icon: '⏹️' },
   };
 
   const config = statusConfig[status];
 
   return (
     <Badge variant={config.variant} pulse={config.pulse}>
-      {config.label}
+      <span className="flex items-center gap-1">
+        <span>{config.icon}</span>
+        <span>{config.label}</span>
+      </span>
     </Badge>
   );
 }

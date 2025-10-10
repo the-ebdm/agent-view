@@ -55,19 +55,29 @@ export default function Home() {
     : status;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950">
+      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-6 py-4 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Agent View</h1>
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">🤖</div>
+            <div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Agent View
+              </h1>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Claude Code Agent Monitor
+              </p>
+            </div>
+          </div>
           <AgentStatusBadge status={displayStatus} />
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Desktop: Two-column layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left sidebar: Form + History */}
-          <div className="md:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4 sm:space-y-6">
             <AgentSpawnForm
               onSpawn={handleSpawn}
               disabled={status === 'running'}
@@ -80,18 +90,26 @@ export default function Home() {
           </div>
 
           {/* Right: Output stream */}
-          <div className="md:col-span-2">
+          <div className="lg:col-span-2">
             {streamError && (
-              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                <p className="text-sm text-red-800 dark:text-red-200 mb-2">
-                  {streamError}
-                </p>
-                <button
-                  onClick={reconnect}
-                  className="text-sm text-red-700 dark:text-red-300 underline"
-                >
-                  Reconnect
-                </button>
+              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 rounded-lg shadow-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl">⚠️</span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-red-800 dark:text-red-200 mb-1">
+                      Connection Error
+                    </h3>
+                    <p className="text-sm text-red-700 dark:text-red-300 mb-2">
+                      {streamError}
+                    </p>
+                    <button
+                      onClick={reconnect}
+                      className="text-sm font-semibold text-red-700 dark:text-red-300 hover:text-red-900 dark:hover:text-red-100 underline"
+                    >
+                      Reconnect →
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
             <AgentOutputStream messages={displayMessages} />
