@@ -1,67 +1,107 @@
 import type { AgentMessage } from '@/types/agent';
-import type { SDKMessage } from './types';
 
-export function processSDKMessage(sdkMessage: SDKMessage): AgentMessage {
+// SDK message can be any object from the Claude Agent SDK
+type SDKMessage = any;
+
+export function processSDKMessage(sdkMessage: SDKMessage): AgentMessage | null {
   const timestamp = Date.now();
 
-  switch (sdkMessage.type) {
-    case 'assistant':
-      return {
-        type: 'assistant',
-        content: sdkMessage.message || sdkMessage.content || '',
-        timestamp,
-      };
-
-    case 'tool_use':
-      return {
-        type: 'tool_use',
-        content: `Using tool: ${sdkMessage.toolName}`,
-        timestamp,
-        toolName: sdkMessage.toolName,
-        toolParams: sdkMessage.toolInput,
-      };
-
-    case 'tool_result':
-      return {
-        type: 'tool_result',
-        content: sdkMessage.result || '',
-        timestamp,
-      };
-
-    case 'result':
-      return {
-        type: 'result',
-        content: sdkMessage.message || sdkMessage.content || 'Agent completed',
-        timestamp,
-      };
-
-    case 'error':
-      return {
-        type: 'error',
-        content: sdkMessage.error || sdkMessage.message || 'Unknown error',
-        timestamp,
-      };
-
-    default:
-      return {
-        type: 'assistant',
-        content: JSON.stringify(sdkMessage),
-        timestamp,
-      };
+  // Handle system messages (init, etc.) - skip these
+  if (sdkMessage.type === 'system') {
+    return null;
   }
+
+  // Handle assistant messages from the SDK
+  if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
+    const content = sdkMessage.message.content;
+
+    // Process each content block
+    for (const block of content) {
+      // Handle text blocks
+      if (block.type === 'text') {
+        return {
+          type: 'assistant',
+          content: block.text || '',
+          timestamp,
+        };
+      }
+
+      // Handle tool use blocks
+      if (block.type === 'tool_use') {
+        return {
+          type: 'tool_use',
+          content: `Using tool: ${block.name}`,
+          timestamp,
+          toolName: block.name,
+          toolParams: block.input,
+        };
+      }
+    }
+  }
+
+  // Handle user messages (which might contain tool results)
+  if (sdkMessage.type === 'user' && sdkMessage.message?.content) {
+    const content = sdkMessage.message.content;
+
+    for (const block of content) {
+      // Handle tool result blocks
+      if (block.type === 'tool_result') {
+        return {
+          type: 'tool_result',
+          content: typeof block.content === 'string'
+            ? block.content
+            : Array.isArray(block.content)
+            ? block.content.map(c => c.text || c).join('\n')
+            : JSON.stringify(block.content),
+          timestamp,
+        };
+      }
+    }
+  }
+
+  // Handle errors
+  if (sdkMessage.type === 'error') {
+    return {
+      type: 'error',
+      content: sdkMessage.error?.message || sdkMessage.message || 'Unknown error',
+      timestamp,
+    };
+  }
+
+  // Skip other message types
+  return null;
 }
 
 export async function* streamAgentMessages(
   agentQuery: AsyncGenerator<unknown, void, unknown>
 ): AsyncGenerator<AgentMessage, void, unknown> {
   try {
+    let rawMessageCount = 0;
     for await (const message of agentQuery) {
+      rawMessageCount++;
       // Process the message from SDK
       const sdkMessage = message as SDKMessage;
+
+      // Log first few messages with full structure to understand the format
+      if (rawMessageCount <= 5) {
+        console.log('[StreamHandler] Message', rawMessageCount, 'full structure:', JSON.stringify(sdkMessage, null, 2));
+      } else {
+        console.log('[StreamHandler] Raw message', rawMessageCount, '- type:', sdkMessage?.type, 'subtype:', sdkMessage?.subtype);
+      }
+
       const agentMessage = processSDKMessage(sdkMessage);
-      yield agentMessage;
+
+      // Only yield if we got a valid message (some SDK messages are skipped)
+      if (agentMessage) {
+        console.log('[StreamHandler] Yielding:', agentMessage.type);
+        yield agentMessage;
+      } else {
+        console.log('[StreamHandler] Skipped message type:', sdkMessage?.type);
+      }
     }
+    console.log('[StreamHandler] Query generator completed after', rawMessageCount, 'raw messages');
   } catch (error) {
+    console.error('[StreamHandler] Error in stream:', error);
     // Yield error message
     yield {
       type: 'error',

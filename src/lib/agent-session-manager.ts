@@ -80,6 +80,22 @@ class AgentSessionManager {
     const session = this.sessions.get(id);
     if (!session) return;
 
+    // Check if already in history to prevent duplicates
+    const existingIndex = this.history.findIndex(item => item.id === id);
+    if (existingIndex !== -1) {
+      // Update existing history item
+      this.history[existingIndex] = {
+        id: session.id,
+        prompt: session.prompt,
+        directory: session.directory,
+        status: session.status,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        messageCount: session.messages.length,
+      };
+      return;
+    }
+
     const historyItem: AgentHistoryItem = {
       id: session.id,
       prompt: session.prompt,
@@ -116,5 +132,14 @@ class AgentSessionManager {
   }
 }
 
-// Singleton instance
-export const sessionManager = new AgentSessionManager();
+// Singleton instance that persists across hot reloads in development
+const globalForSessionManager = globalThis as unknown as {
+  sessionManager: AgentSessionManager | undefined;
+};
+
+export const sessionManager = globalForSessionManager.sessionManager ?? new AgentSessionManager();
+
+// Preserve singleton across hot reloads in development
+if (process.env.NODE_ENV !== 'production') {
+  globalForSessionManager.sessionManager = sessionManager;
+}

@@ -26,6 +26,7 @@ export function useAgentStream(agentId: string | null): UseAgentStreamResult {
     setStatus('running');
 
     const es = new EventSource(`/api/agents/${agentId}/stream`);
+    let streamCompletedGracefully = false;
 
     es.onmessage = (event) => {
       try {
@@ -36,9 +37,11 @@ export function useAgentStream(agentId: string | null): UseAgentStreamResult {
         if (message.type === 'error') {
           setStatus('error');
           setError(message.content);
+          streamCompletedGracefully = true;
           es.close();
         } else if (message.type === 'result') {
           setStatus('completed');
+          streamCompletedGracefully = true;
           es.close();
         }
       } catch (err) {
@@ -46,9 +49,12 @@ export function useAgentStream(agentId: string | null): UseAgentStreamResult {
       }
     };
 
-    es.onerror = () => {
-      setError('Connection lost');
-      setStatus('error');
+    es.onerror = (event) => {
+      // Only treat as error if stream didn't complete gracefully
+      if (!streamCompletedGracefully && es.readyState === EventSource.CLOSED) {
+        setError('Connection lost');
+        setStatus('error');
+      }
       es.close();
     };
 
