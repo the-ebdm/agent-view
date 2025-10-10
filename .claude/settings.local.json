@@ -4,7 +4,8 @@
     "allow": [
       "Bash(openspec list:*)",
       "Bash(openspec validate:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
