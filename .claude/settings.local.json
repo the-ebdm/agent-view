@@ -1,13 +1,11 @@
 {
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
-      "Bash(git add *)",
-      "Bash(git commit:*)"
+      "Bash(openspec list:*)",
+      "Bash(openspec validate:*)"
     ],
-    "deny": [
-      "Bash(git add -A)"
-    ],
+    "deny": [],
     "ask": []
-  },
-  "includeCoAuthoredBy": false
+  }
 }
