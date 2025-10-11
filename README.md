@@ -188,3 +188,7 @@ WTFPL ("Do What The Fuck You Want To Public License") - I wrote this in an eveni
 - [Claude Agent SDK Documentation](https://docs.claude.com/en/api/agent-sdk/overview)
 - [Claude Agent SDK TypeScript Guide](https://docs.claude.com/en/api/agent-sdk/typescript)
 - [Anthropic API Documentation](https://docs.anthropic.com)
+
+<a href="http://www.wtfpl.net/"><img
+       src="http://www.wtfpl.net/wp-content/uploads/2012/12/wtfpl-badge-4.png"
+       width="80" height="15" alt="WTFPL" /></a>
