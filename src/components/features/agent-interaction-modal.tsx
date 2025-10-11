@@ -1,35 +1,38 @@
 // Phase 2: Interactive modal for chatting with agents
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { AgentOutputStream } from './agent-output-stream';
-import { useAgentStream } from '@/hooks/use-agent-stream';
-import { useAgentLifecycle } from '@/hooks/use-agent-lifecycle';
-import type { AgentSession } from '@/types/agent';
+import React, { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { AgentOutputStream } from "./agent-output-stream";
+import { useAgentStream } from "@/hooks/use-agent-stream";
+import { useAgentLifecycle } from "@/hooks/use-agent-lifecycle";
+import type { AgentSession } from "@/types/agent";
 
 interface AgentInteractionModalProps {
   agent: AgentSession;
   onClose: () => void;
 }
 
-export function AgentInteractionModal({ agent, onClose }: AgentInteractionModalProps) {
+export function AgentInteractionModal({
+  agent,
+  onClose,
+}: AgentInteractionModalProps) {
   const { messages, status } = useAgentStream(agent.id);
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
     };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
   }, [onClose]);
 
   const handleSendMessage = async () => {
@@ -39,29 +42,29 @@ export function AgentInteractionModal({ agent, onClose }: AgentInteractionModalP
     try {
       // TODO: Implement follow-up message API endpoint
       // For now, this would require SDK support for continuing conversations
-      console.log('Sending message to agent:', agent.id, input);
+      console.log("Sending message to agent:", agent.id, input);
 
       // Placeholder - in a real implementation, you'd call an API endpoint
       // that continues the agent's conversation
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      setInput('');
+      setInput("");
     } catch (err) {
-      console.error('Failed to send message:', err);
+      console.error("Failed to send message:", err);
     } finally {
       setIsSending(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const isRunning = agent.lifecycleState === 'running';
-  const isPaused = agent.lifecycleState === 'paused';
+  const isRunning = agent.lifecycleState === "running";
+  const isPaused = agent.lifecycleState === "paused";
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -87,7 +90,7 @@ export function AgentInteractionModal({ agent, onClose }: AgentInteractionModalP
                 onClick={() => pause.execute()}
                 disabled={pause.isLoading}
               >
-                {pause.isLoading ? '⏸️...' : '⏸️ Pause'}
+                {pause.isLoading ? "⏸️..." : "⏸️ Pause"}
               </Button>
             )}
             {isPaused && (
@@ -97,14 +100,10 @@ export function AgentInteractionModal({ agent, onClose }: AgentInteractionModalP
                 onClick={() => resume.execute()}
                 disabled={resume.isLoading}
               >
-                {resume.isLoading ? '▶️...' : '▶️ Resume'}
+                {resume.isLoading ? "▶️..." : "▶️ Resume"}
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onClose}
-            >
+            <Button size="sm" variant="outline" onClick={onClose}>
               ✕
             </Button>
           </div>
@@ -114,24 +113,33 @@ export function AgentInteractionModal({ agent, onClose }: AgentInteractionModalP
         <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${
-                isRunning ? 'bg-green-500 animate-pulse' :
-                isPaused ? 'bg-yellow-500' : 'bg-gray-500'
-              }`} />
-              <span className="font-medium capitalize">{agent.lifecycleState}</span>
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isRunning
+                    ? "bg-green-500 animate-pulse"
+                    : isPaused
+                    ? "bg-yellow-500"
+                    : "bg-gray-500"
+                }`}
+              />
+              <span className="font-medium capitalize">
+                {agent.lifecycleState}
+              </span>
             </div>
             <div className="text-gray-500 dark:text-gray-400">
               {messages.length} messages
             </div>
-            <div className={`px-2 py-1 rounded text-xs font-medium ${
-              agent.toolPermissions.preset === 'read-only'
-                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                : agent.toolPermissions.preset === 'standard'
-                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                : agent.toolPermissions.preset === 'full-access'
-                ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
-                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-            }`}>
+            <div
+              className={`px-2 py-1 rounded text-xs font-medium ${
+                agent.toolPermissions.preset === "read-only"
+                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                  : agent.toolPermissions.preset === "standard"
+                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                  : agent.toolPermissions.preset === "full-access"
+                  ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                  : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+              }`}
+            >
               {agent.toolPermissions.preset}
             </div>
           </div>
@@ -152,7 +160,7 @@ export function AgentInteractionModal({ agent, onClose }: AgentInteractionModalP
             </div>
           )}
 
-          {agent.lifecycleState === 'stopped' && (
+          {agent.lifecycleState === "stopped" && (
             <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 🛑 Agent has been stopped. No further interaction possible.
@@ -182,25 +190,18 @@ export function AgentInteractionModal({ agent, onClose }: AgentInteractionModalP
                     onClick={() => stop.execute()}
                     disabled={stop.isLoading}
                   >
-                    {stop.isLoading ? '🛑 Stopping...' : '🛑 Stop Agent'}
+                    {stop.isLoading ? "🛑 Stopping..." : "🛑 Stop Agent"}
                   </Button>
                   <Button
                     size="sm"
                     onClick={handleSendMessage}
                     disabled={!input.trim() || !isRunning || isSending}
                   >
-                    {isSending ? 'Sending...' : 'Send Message'}
+                    {isSending ? "Sending..." : "Send Message"}
                   </Button>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* Note about follow-up messages */}
-          {isRunning && (
-            <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 italic">
-              Note: Follow-up messaging requires SDK support for conversation continuation
-            </p>
           )}
         </div>
       </div>

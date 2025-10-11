@@ -179,15 +179,15 @@ export function SlashCommandButton({
 
       {/* Dialog */}
       {showDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/75 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full border border-gray-200 dark:border-gray-700">
             {/* Header */}
-            <div className="px-6 py-4 border-b">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold flex items-center gap-2 text-gray-900 dark:text-white">
                 <span>{config.icon}</span>
                 <span>{config.label}</span>
               </h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {config.description}
               </p>
             </div>
@@ -196,7 +196,7 @@ export function SlashCommandButton({
             <form onSubmit={handleSubmit} className="px-6 py-4">
               {/* Change ID Input */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {config.promptLabel}
                 </label>
                 <input
@@ -204,7 +204,7 @@ export function SlashCommandButton({
                   value={changeId}
                   onChange={(e) => setChangeId(e.target.value)}
                   placeholder={config.placeholder}
-                  className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-white placeholder-gray-500"
                   disabled={isExecuting}
                   autoFocus
                 />
@@ -213,7 +213,7 @@ export function SlashCommandButton({
               {/* Archive-specific options */}
               {command === 'archive' && (
                 <div className="mb-4 space-y-2">
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <input
                       type="checkbox"
                       checked={skipSpecs}
@@ -223,7 +223,7 @@ export function SlashCommandButton({
                     />
                     <span>Skip updating specs (--skip-specs)</span>
                   </label>
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <input
                       type="checkbox"
                       checked={autoYes}
@@ -238,16 +238,16 @@ export function SlashCommandButton({
 
               {/* Output/Error Display */}
               {output && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <p className="text-sm text-green-800 whitespace-pre-wrap font-mono">
+                <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-sm text-green-800 dark:text-green-300 whitespace-pre-wrap font-mono">
                     {output}
                   </p>
                 </div>
               )}
 
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-800 whitespace-pre-wrap">
+                <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-800 dark:text-red-300 whitespace-pre-wrap">
                     {error}
                   </p>
                 </div>
@@ -259,7 +259,7 @@ export function SlashCommandButton({
                   type="button"
                   onClick={() => setShowDialog(false)}
                   disabled={isExecuting}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>

@@ -70,16 +70,16 @@ export function OpenSpecSection() {
 
   if (loading) {
     return (
-      <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-700 dark:border-gray-700 p-6">
-        <div className="text-center text-gray-400 dark:text-gray-400">Loading OpenSpec entities...</div>
+      <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="text-center text-gray-600 dark:text-gray-400">Loading OpenSpec entities...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-red-900/50 p-6">
-        <div className="text-center text-red-400">Error: {error}</div>
+      <div className="bg-red-50 dark:bg-red-900/20 rounded-lg shadow-sm border border-red-200 dark:border-red-900/50 p-6">
+        <div className="text-center text-red-600 dark:text-red-400">Error: {error}</div>
       </div>
     );
   }
@@ -89,14 +89,14 @@ export function OpenSpecSection() {
   return (
     <div className="space-y-6">
       {/* Header with Search and Filter */}
-      <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-700 dark:border-gray-700 p-4">
+      <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
         <div className="flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex items-center gap-3">
               <span className="text-2xl">📁</span>
               <div>
-                <h2 className="text-lg font-semibold text-white dark:text-white">OpenSpec</h2>
-                <p className="text-xs text-gray-400 dark:text-gray-400">{totalCount} entities</p>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">OpenSpec</h2>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{totalCount} entities</p>
               </div>
             </div>
 
@@ -107,14 +107,14 @@ export function OpenSpecSection() {
                 placeholder="Search specs, changes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 px-3 py-2 text-sm bg-gray-900/50 border border-gray-600 text-white placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
 
               {/* Filter */}
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as any)}
-                className="px-3 py-2 text-sm bg-gray-900/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 text-sm bg-gray-50 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">All</option>
                 <option value="spec">Specs</option>
@@ -139,8 +139,8 @@ export function OpenSpecSection() {
 
       {/* Active Changes */}
       {filteredChanges.length > 0 && (
-        <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-700 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-white dark:text-white mb-3">
+        <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
             Active Changes ({filteredChanges.length})
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -157,8 +157,8 @@ export function OpenSpecSection() {
 
       {/* Specifications */}
       {filteredSpecs.length > 0 && (
-        <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-700 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-white dark:text-white mb-3">
+        <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
             Specifications ({filteredSpecs.length})
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -175,8 +175,8 @@ export function OpenSpecSection() {
 
       {/* Archives */}
       {filteredArchives.length > 0 && (
-        <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-700 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-semibold text-white dark:text-white mb-3">
+        <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
             Archives ({filteredArchives.length})
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -193,10 +193,10 @@ export function OpenSpecSection() {
 
       {/* Empty State */}
       {totalCount === 0 && (
-        <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-700 dark:border-gray-700 p-12 text-center">
+        <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
           <span className="text-6xl">📁</span>
-          <h3 className="mt-4 text-lg font-medium text-white dark:text-white">No OpenSpec entities found</h3>
-          <p className="mt-2 text-sm text-gray-400 dark:text-gray-400">
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No OpenSpec entities found</h3>
+          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             {searchQuery
               ? 'Try adjusting your search or filter'
               : 'Create your first spec or change to get started'}

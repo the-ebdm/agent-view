@@ -168,53 +168,53 @@ export function MarkdownEditor({
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center gap-2">
           {/* Formatting buttons */}
           <button
             onClick={() => applyFormatting('bold')}
-            className="px-2 py-1 text-sm font-bold hover:bg-gray-200 rounded transition-colors"
+            className="px-2 py-1 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Bold (Ctrl+B)"
           >
             B
           </button>
           <button
             onClick={() => applyFormatting('italic')}
-            className="px-2 py-1 text-sm italic hover:bg-gray-200 rounded transition-colors"
+            className="px-2 py-1 text-sm italic text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Italic (Ctrl+I)"
           >
             I
           </button>
           <button
             onClick={() => applyFormatting('code')}
-            className="px-2 py-1 text-sm font-mono hover:bg-gray-200 rounded transition-colors"
+            className="px-2 py-1 text-sm font-mono text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Code (Ctrl+E)"
           >
             {'</>'}
           </button>
           <button
             onClick={() => applyFormatting('codeblock')}
-            className="px-2 py-1 text-sm font-mono hover:bg-gray-200 rounded transition-colors"
+            className="px-2 py-1 text-sm font-mono text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Code Block"
           >
             {'{ }'}
           </button>
           <button
             onClick={() => applyFormatting('heading')}
-            className="px-2 py-1 text-sm font-bold hover:bg-gray-200 rounded transition-colors"
+            className="px-2 py-1 text-sm font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="Heading"
           >
             H
           </button>
           <button
             onClick={() => applyFormatting('list')}
-            className="px-2 py-1 text-sm hover:bg-gray-200 rounded transition-colors"
+            className="px-2 py-1 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
             title="List"
           >
             ≡
           </button>
 
-          <div className="w-px h-6 bg-gray-300 mx-2" />
+          <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-2" />
 
           {/* Validate button */}
           {onValidate && (
@@ -238,10 +238,10 @@ export function MarkdownEditor({
             />
           )}
           {isSaving && (
-            <span className="text-sm text-gray-500">Saving...</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">Saving...</span>
           )}
           {lastSaved && !isSaving && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
               Saved {formatTimeAgo(lastSaved)}
             </span>
           )}
@@ -251,21 +251,21 @@ export function MarkdownEditor({
       {/* Editor + Preview */}
       <div className="flex-1 flex overflow-hidden">
         {/* Editor pane */}
-        <div className="flex-1 flex flex-col border-r">
+        <div className="flex-1 flex flex-col border-r border-gray-200 dark:border-gray-700">
           <textarea
             ref={textareaRef}
             value={localContent}
             onChange={handleChange}
             placeholder={placeholder}
-            className="flex-1 w-full p-4 font-mono text-sm resize-none focus:outline-none"
+            className="flex-1 w-full p-4 font-mono text-sm resize-none focus:outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-500"
             spellCheck={false}
           />
         </div>
 
         {/* Preview pane */}
         {showPreview && (
-          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
-            <div className="prose prose-sm max-w-none">
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900/50">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
               <MarkdownRenderer content={localContent} />
             </div>
           </div>
@@ -274,7 +274,7 @@ export function MarkdownEditor({
 
       {/* Validation panel */}
       {validationErrors.length > 0 && (
-        <div className="border-t p-4 bg-white">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
           <ValidationPanel
             errors={validationErrors}
             onJumpToError={(error) => {

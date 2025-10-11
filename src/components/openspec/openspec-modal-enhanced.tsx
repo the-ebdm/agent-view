@@ -238,23 +238,23 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/75 p-4"
       onClick={viewMode === 'view' ? onClose : undefined}
     >
       <div
-        className="bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col border border-gray-700"
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col border border-gray-200 dark:border-gray-700"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <span className="text-2xl">
               {entity.type === 'spec' ? '📋' : entity.type === 'archive' ? '📦' : '🔄'}
             </span>
             <div>
-              <h2 className="text-lg font-semibold text-white">{entity.name}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{entity.name}</h2>
               <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-400">{entity.id}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{entity.id}</p>
                 {isChange && (
                   <ValidationIndicator
                     status={validationStatus}
@@ -273,7 +273,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
               className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
                 viewMode === 'edit'
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
               }`}
             >
               {viewMode === 'edit' ? '👁️ View' : '✏️ Edit'}
@@ -293,7 +293,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
             {/* Close button */}
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-300 transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -304,7 +304,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
 
         {/* Tabs (for multi-file entities) */}
         {isMultiFile && (
-          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-700 bg-gray-900/50">
+          <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
             <div className="flex gap-2">
               <TabButton
                 active={activeTab === 'proposal'}
@@ -362,16 +362,16 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
         )}
 
         {/* Content */}
-        <div className={`flex-1 overflow-hidden ${viewMode === 'edit' ? '' : 'overflow-y-auto px-6 py-4 bg-gray-900/50'}`}>
+        <div className={`flex-1 overflow-hidden ${viewMode === 'edit' ? '' : 'overflow-y-auto px-6 py-4 bg-gray-50 dark:bg-gray-900/50'}`}>
           {renderContent()}
         </div>
 
         {/* Footer (view mode only) */}
         {viewMode === 'view' && (
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-700">
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded hover:bg-gray-600"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
             >
               Close
             </button>
@@ -397,7 +397,7 @@ function TabButton({ active, onClick, children }: TabButtonProps) {
       className={`px-4 py-2 text-sm font-medium rounded transition-colors ${
         active
           ? 'bg-blue-600 text-white shadow-sm'
-          : 'text-gray-400 hover:text-white hover:bg-gray-700'
+          : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-gray-700'
       }`}
       onClick={onClick}
     >
