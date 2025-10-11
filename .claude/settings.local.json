@@ -10,7 +10,8 @@
       "Bash(npm run dev:*)",
       "Bash(openspec show:*)",
       "Bash(openspec:*)",
-      "Bash(npx openspec list:*)"
+      "Bash(npx openspec list:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []
