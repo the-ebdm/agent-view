@@ -70,9 +70,9 @@ export function TaskChecklist({
 
   if (tasks.length === 0) {
     return (
-      <div className={`p-4 text-center text-gray-500 ${className}`}>
+      <div className={`p-4 text-center text-gray-600 dark:text-gray-400 ${className}`}>
         <p className="text-sm">No tasks found in tasks.md</p>
-        <p className="text-xs mt-1">Add tasks using the format: <code>- [ ] Task description</code></p>
+        <p className="text-xs mt-1">Add tasks using the format: <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">- [ ] Task description</code></p>
       </div>
     );
   }
@@ -81,30 +81,30 @@ export function TaskChecklist({
     <div className={`flex flex-col ${className}`}>
       {/* Progress Bar */}
       {showProgress && (
-        <div className="px-4 py-3 border-b bg-gray-50">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Progress: {completedCount}/{totalCount} tasks
             </span>
-            <span className="text-sm font-semibold text-blue-600">
+            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
               {percentage}%
             </span>
           </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-500"
               style={{ width: `${percentage}%` }}
             />
           </div>
           {isSaving && (
-            <p className="text-xs text-gray-500 mt-1">Saving...</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Saving...</p>
           )}
         </div>
       )}
 
       {/* Task List */}
       <div className="flex-1 overflow-y-auto">
-        <div className="divide-y">
+        <div className="divide-y divide-gray-200 dark:divide-gray-700">
           {tasks.map((task, index) => (
             <TaskItem
               key={task.index}
@@ -118,14 +118,14 @@ export function TaskChecklist({
 
       {/* Summary */}
       {showProgress && (
-        <div className="px-4 py-2 border-t bg-gray-50 text-center">
+        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-center">
           {percentage === 100 ? (
-            <p className="text-sm font-medium text-green-600 flex items-center justify-center gap-2">
+            <p className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center justify-center gap-2">
               <span>✅</span>
               <span>All tasks completed!</span>
             </p>
           ) : (
-            <p className="text-xs text-gray-600">
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               {totalCount - completedCount} task{totalCount - completedCount !== 1 ? 's' : ''} remaining
             </p>
           )}
@@ -150,7 +150,7 @@ function TaskItem({ task, onToggle, readOnly }: TaskItemComponentProps) {
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${indentClass}`}
+      className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${indentClass}`}
     >
       {/* Checkbox */}
       <input
@@ -158,14 +158,14 @@ function TaskItem({ task, onToggle, readOnly }: TaskItemComponentProps) {
         checked={task.completed}
         onChange={onToggle}
         disabled={readOnly}
-        className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-0.5 w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       {/* Task text */}
       <label
         onClick={readOnly ? undefined : onToggle}
         className={`flex-1 text-sm cursor-pointer select-none ${
-          task.completed ? 'line-through text-gray-500' : 'text-gray-800'
+          task.completed ? 'line-through text-gray-500 dark:text-gray-600' : 'text-gray-800 dark:text-gray-200'
         } ${readOnly ? 'cursor-default' : ''}`}
       >
         {task.content}
@@ -173,7 +173,7 @@ function TaskItem({ task, onToggle, readOnly }: TaskItemComponentProps) {
 
       {/* Section label (for debugging) */}
       {process.env.NODE_ENV === 'development' && task.section && (
-        <span className="text-xs text-gray-400 font-mono">
+        <span className="text-xs text-gray-400 dark:text-gray-600 font-mono">
           {task.section}
         </span>
       )}
@@ -203,14 +203,14 @@ export function TaskProgressIndicator({
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="flex items-center gap-1.5">
-        <span className={`text-xs font-semibold ${isComplete ? 'text-green-600' : 'text-gray-700'}`}>
+        <span className={`text-xs font-semibold ${isComplete ? 'text-green-600 dark:text-green-400' : 'text-gray-700 dark:text-gray-300'}`}>
           {completedCount}/{totalCount}
         </span>
-        <span className="text-xs text-gray-500">tasks</span>
+        <span className="text-xs text-gray-500 dark:text-gray-500">tasks</span>
       </div>
 
       {showBar && (
-        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden min-w-[60px]">
+        <div className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden min-w-[60px]">
           <div
             className={`h-full transition-all duration-500 ${
               isComplete ? 'bg-green-500' : 'bg-blue-500'
@@ -220,7 +220,7 @@ export function TaskProgressIndicator({
         </div>
       )}
 
-      <span className={`text-xs font-medium ${isComplete ? 'text-green-600' : 'text-gray-600'}`}>
+      <span className={`text-xs font-medium ${isComplete ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>
         {percentage}%
       </span>
     </div>
