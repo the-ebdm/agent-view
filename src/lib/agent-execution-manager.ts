@@ -9,6 +9,7 @@ import { query } from '@anthropic-ai/claude-agent-sdk';
 import { streamAgentMessages } from './agent-sdk/stream-handler';
 import { getToolsForPreset } from './tool-permissions';
 import { sessionManager } from './agent-session-manager';
+import { getMessagesRepository, isPersistenceEnabled } from './database';
 import type { AgentMessage, ToolPermission } from '@/types/agent';
 
 interface SpawnParams {
@@ -121,6 +122,21 @@ class AgentExecutionManager {
    * @returns Array of buffered messages
    */
   getBufferedMessages(id: string): AgentMessage[] {
+    // Try loading from database first if persistence is enabled
+    if (isPersistenceEnabled()) {
+      try {
+        const messagesRepo = getMessagesRepository();
+        const messages = messagesRepo.findRecentByAgentId(id, this.MAX_BUFFER_SIZE);
+        if (messages.length > 0) {
+          return messages;
+        }
+      } catch (error) {
+        console.error('[ExecutionManager] Failed to load messages from database:', error);
+        // Fall through to in-memory buffer
+      }
+    }
+
+    // Fall back to in-memory buffer
     return this.messageBuffers.get(id) || [];
   }
 
@@ -254,6 +270,20 @@ class AgentExecutionManager {
   private broadcastMessage(id: string, message: AgentMessage): void {
     // Add to buffer (ring buffer, FIFO)
     this.addToBuffer(id, message);
+
+    // Persist to database
+    if (isPersistenceEnabled()) {
+      try {
+        const messagesRepo = getMessagesRepository();
+        messagesRepo.create({
+          agentId: id,
+          ...message,
+        });
+      } catch (error) {
+        console.error('[ExecutionManager] Failed to persist message to database:', error);
+        // Continue - graceful degradation
+      }
+    }
 
     // Send to all subscribers
     const subs = this.subscribers.get(id);

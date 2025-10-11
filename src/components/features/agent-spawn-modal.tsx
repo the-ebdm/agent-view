@@ -40,8 +40,14 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn }: AgentSpawnModalPro
   // Load saved configs and recent agents
   useEffect(() => {
     if (isOpen) {
-      setSavedConfigs(AgentConfigStorage.getConfigs());
-      setRecentAgents(AgentConfigStorage.getRecent());
+      (async () => {
+        const [configs, recent] = await Promise.all([
+          AgentConfigStorage.getConfigs(),
+          AgentConfigStorage.getRecent(),
+        ]);
+        setSavedConfigs(configs);
+        setRecentAgents(recent);
+      })();
     }
   }, [isOpen]);
 
@@ -105,7 +111,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn }: AgentSpawnModalPro
       const data = await response.json();
 
       // Add to recent
-      AgentConfigStorage.addToRecent({
+      await AgentConfigStorage.addToRecent({
         name: name.trim() || 'Unnamed Agent',
         prompt,
         directory,
@@ -164,13 +170,13 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn }: AgentSpawnModalPro
     setError(null);
   };
 
-  const handleSaveConfig = () => {
+  const handleSaveConfig = async () => {
     if (!configName.trim()) {
       setError('Configuration name is required');
       return;
     }
 
-    AgentConfigStorage.saveConfig({
+    await AgentConfigStorage.saveConfig({
       name: configName,
       prompt,
       directory,
@@ -178,14 +184,16 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn }: AgentSpawnModalPro
       customTools: preset === 'custom' ? Array.from(customTools) : undefined,
     });
 
-    setSavedConfigs(AgentConfigStorage.getConfigs());
+    const configs = await AgentConfigStorage.getConfigs();
+    setSavedConfigs(configs);
     setShowSaveConfig(false);
     setConfigName('');
   };
 
-  const handleDeleteConfig = (id: string) => {
-    AgentConfigStorage.deleteConfig(id);
-    setSavedConfigs(AgentConfigStorage.getConfigs());
+  const handleDeleteConfig = async (id: string) => {
+    await AgentConfigStorage.deleteConfig(id);
+    const configs = await AgentConfigStorage.getConfigs();
+    setSavedConfigs(configs);
   };
 
   const filteredTemplates = selectedCategory === 'all'

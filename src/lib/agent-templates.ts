@@ -122,10 +122,194 @@ export interface SavedAgentConfig {
 export class AgentConfigStorage {
   private static STORAGE_KEY = 'agent-view-configs';
   private static RECENT_KEY = 'agent-view-recent';
+  private static MIGRATION_KEY = 'agent-view-migrated';
   private static MAX_RECENT = 10;
 
-  static saveConfig(config: Omit<SavedAgentConfig, 'id' | 'createdAt'>): SavedAgentConfig {
-    const configs = this.getConfigs();
+  /**
+   * Check if we're running in browser
+   */
+  private static isBrowser(): boolean {
+    return typeof window !== 'undefined';
+  }
+
+  /**
+   * Migrate localStorage configs to database (one-time operation)
+   */
+  private static async migrateToDatabase(): Promise<void> {
+    if (!this.isBrowser()) return;
+
+    // Check if already migrated
+    const migrated = localStorage.getItem(this.MIGRATION_KEY);
+    if (migrated === 'true') return;
+
+    try {
+      // Get configs from localStorage
+      const savedConfigsData = localStorage.getItem(this.STORAGE_KEY);
+      const recentConfigsData = localStorage.getItem(this.RECENT_KEY);
+
+      const savedConfigs: SavedAgentConfig[] = savedConfigsData ? JSON.parse(savedConfigsData) : [];
+      const recentConfigs: SavedAgentConfig[] = recentConfigsData ? JSON.parse(recentConfigsData) : [];
+
+      // Combine and deduplicate
+      const allConfigs = [...savedConfigs, ...recentConfigs];
+      const uniqueConfigs = Array.from(
+        new Map(allConfigs.map(c => [`${c.name}-${c.directory}`, c])).values()
+      );
+
+      if (uniqueConfigs.length === 0) {
+        localStorage.setItem(this.MIGRATION_KEY, 'true');
+        return;
+      }
+
+      // Migrate to database
+      const response = await fetch('/api/configs/migrate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ configs: uniqueConfigs }),
+      });
+
+      if (response.ok) {
+        console.log('[AgentConfigStorage] Successfully migrated configs to database');
+        localStorage.setItem(this.MIGRATION_KEY, 'true');
+      }
+    } catch (error) {
+      console.error('[AgentConfigStorage] Failed to migrate configs:', error);
+      // Don't set migration flag - retry next time
+    }
+  }
+
+  /**
+   * Save new agent configuration
+   */
+  static async saveConfig(config: Omit<SavedAgentConfig, 'id' | 'createdAt'>): Promise<SavedAgentConfig> {
+    // Trigger migration if needed
+    await this.migrateToDatabase();
+
+    try {
+      // Try database first
+      const response = await fetch('/api/configs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.config;
+      }
+
+      // Fall back to localStorage
+      throw new Error('Database save failed');
+    } catch (error) {
+      console.warn('[AgentConfigStorage] Falling back to localStorage:', error);
+      return this.saveConfigLocal(config);
+    }
+  }
+
+  /**
+   * Get all saved configurations
+   */
+  static async getConfigs(): Promise<SavedAgentConfig[]> {
+    // Trigger migration if needed
+    await this.migrateToDatabase();
+
+    try {
+      // Try database first
+      const response = await fetch('/api/configs');
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.configs;
+      }
+
+      // Fall back to localStorage
+      throw new Error('Database fetch failed');
+    } catch (error) {
+      console.warn('[AgentConfigStorage] Falling back to localStorage:', error);
+      return this.getConfigsLocal();
+    }
+  }
+
+  /**
+   * Delete configuration by ID
+   */
+  static async deleteConfig(id: string): Promise<void> {
+    try {
+      // Try database first
+      const response = await fetch(`/api/configs/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        return;
+      }
+
+      // Fall back to localStorage
+      throw new Error('Database delete failed');
+    } catch (error) {
+      console.warn('[AgentConfigStorage] Falling back to localStorage:', error);
+      this.deleteConfigLocal(id);
+    }
+  }
+
+  /**
+   * Add configuration to recently used
+   */
+  static async addToRecent(config: Omit<SavedAgentConfig, 'id' | 'createdAt' | 'lastUsed'>): Promise<void> {
+    try {
+      // Try to find existing config by name and directory
+      const configs = await this.getConfigs();
+      const existing = configs.find(
+        c => c.name === config.name && c.directory === config.directory
+      );
+
+      if (existing) {
+        // Update lastUsed timestamp
+        await fetch(`/api/configs/${existing.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update-last-used' }),
+        });
+      } else {
+        // Create new config
+        await this.saveConfig(config);
+      }
+    } catch (error) {
+      console.warn('[AgentConfigStorage] Falling back to localStorage:', error);
+      this.addToRecentLocal(config);
+    }
+  }
+
+  /**
+   * Get recently used configurations
+   */
+  static async getRecent(): Promise<SavedAgentConfig[]> {
+    // Trigger migration if needed
+    await this.migrateToDatabase();
+
+    try {
+      // Try database first
+      const response = await fetch(`/api/configs/recent?limit=${this.MAX_RECENT}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.configs;
+      }
+
+      // Fall back to localStorage
+      throw new Error('Database fetch failed');
+    } catch (error) {
+      console.warn('[AgentConfigStorage] Falling back to localStorage:', error);
+      return this.getRecentLocal();
+    }
+  }
+
+  // ===== localStorage fallback methods =====
+
+  private static saveConfigLocal(config: Omit<SavedAgentConfig, 'id' | 'createdAt'>): SavedAgentConfig {
+    if (!this.isBrowser()) throw new Error('localStorage not available');
+
+    const configs = this.getConfigsLocal();
     const newConfig: SavedAgentConfig = {
       ...config,
       id: `config-${Date.now()}`,
@@ -136,21 +320,22 @@ export class AgentConfigStorage {
     return newConfig;
   }
 
-  static getConfigs(): SavedAgentConfig[] {
-    if (typeof window === 'undefined') return [];
+  private static getConfigsLocal(): SavedAgentConfig[] {
+    if (!this.isBrowser()) return [];
     const data = localStorage.getItem(this.STORAGE_KEY);
     return data ? JSON.parse(data) : [];
   }
 
-  static deleteConfig(id: string): void {
-    const configs = this.getConfigs().filter(c => c.id !== id);
+  private static deleteConfigLocal(id: string): void {
+    if (!this.isBrowser()) return;
+    const configs = this.getConfigsLocal().filter(c => c.id !== id);
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(configs));
   }
 
-  static addToRecent(config: Omit<SavedAgentConfig, 'id' | 'createdAt' | 'lastUsed'>): void {
-    if (typeof window === 'undefined') return;
+  private static addToRecentLocal(config: Omit<SavedAgentConfig, 'id' | 'createdAt' | 'lastUsed'>): void {
+    if (!this.isBrowser()) return;
 
-    const recent = this.getRecent();
+    const recent = this.getRecentLocal();
     const newEntry: SavedAgentConfig = {
       ...config,
       id: `recent-${Date.now()}`,
@@ -168,13 +353,9 @@ export class AgentConfigStorage {
     localStorage.setItem(this.RECENT_KEY, JSON.stringify(updated));
   }
 
-  static getRecent(): SavedAgentConfig[] {
-    if (typeof window === 'undefined') return [];
+  private static getRecentLocal(): SavedAgentConfig[] {
+    if (!this.isBrowser()) return [];
     const data = localStorage.getItem(this.RECENT_KEY);
     return data ? JSON.parse(data) : [];
-  }
-
-  static clearRecent(): void {
-    localStorage.removeItem(this.RECENT_KEY);
   }
 }

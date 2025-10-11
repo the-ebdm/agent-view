@@ -1,6 +1,7 @@
 import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem, ToolPermission, AgentMetrics, AgentLifecycleState } from '@/types/agent';
 import { generateAgentName, validateAgentName, ensureUniqueName } from './agent-names';
 import { getDefaultToolPermission, validateToolPermission } from './tool-permissions';
+import { getAgentsRepository, isPersistenceEnabled } from './database';
 
 class AgentSessionManager {
   private sessions: Map<string, AgentSession> = new Map();
@@ -57,6 +58,18 @@ class AgentSessionManager {
 
     this.sessions.set(id, session);
     this.activeAgents.set(id, session); // Phase 2: Track in active agents
+
+    // Persist to database
+    if (isPersistenceEnabled()) {
+      try {
+        const agentsRepo = getAgentsRepository();
+        agentsRepo.create(session);
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to persist session to database:', error);
+        // Continue - graceful degradation
+      }
+    }
+
     return session;
   }
 
@@ -107,6 +120,19 @@ class AgentSessionManager {
 
     session.lifecycleState = 'paused';
     session.pausedTime = Date.now();
+
+    // Persist to database
+    if (isPersistenceEnabled()) {
+      try {
+        const agentsRepo = getAgentsRepository();
+        agentsRepo.update(id, {
+          lifecycleState: 'paused',
+          pausedTime: session.pausedTime,
+        } as Partial<AgentSession>);
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to persist pause to database:', error);
+      }
+    }
   }
 
   /**
@@ -124,6 +150,19 @@ class AgentSessionManager {
 
     session.lifecycleState = 'running';
     session.pausedTime = undefined;
+
+    // Persist to database
+    if (isPersistenceEnabled()) {
+      try {
+        const agentsRepo = getAgentsRepository();
+        agentsRepo.update(id, {
+          lifecycleState: 'running',
+          pausedTime: null,
+        } as Partial<AgentSession>);
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to persist resume to database:', error);
+      }
+    }
   }
 
   /**
@@ -139,6 +178,20 @@ class AgentSessionManager {
     session.status = 'interrupted';
     session.endTime = Date.now();
     this.moveToHistory(id);
+
+    // Persist to database
+    if (isPersistenceEnabled()) {
+      try {
+        const agentsRepo = getAgentsRepository();
+        agentsRepo.update(id, {
+          lifecycleState: 'stopped',
+          status: 'interrupted',
+          endTime: session.endTime,
+        } as Partial<AgentSession>);
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to persist stop to database:', error);
+      }
+    }
   }
 
   /**
@@ -167,6 +220,16 @@ class AgentSessionManager {
     }
 
     session.name = newName;
+
+    // Persist to database
+    if (isPersistenceEnabled()) {
+      try {
+        const agentsRepo = getAgentsRepository();
+        agentsRepo.update(id, { name: newName } as Partial<AgentSession>);
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to persist rename to database:', error);
+      }
+    }
   }
 
   // Deprecated: Kept for backward compatibility but no longer enforces single agent
@@ -193,6 +256,20 @@ class AgentSessionManager {
         session.lifecycleState = 'stopped'; // Phase 2
         session.endTime = Date.now();
         this.moveToHistory(id);
+      }
+
+      // Persist status changes to database
+      if (isPersistenceEnabled() && (message.type === 'error' || message.type === 'result')) {
+        try {
+          const agentsRepo = getAgentsRepository();
+          agentsRepo.update(id, {
+            status: session.status,
+            lifecycleState: session.lifecycleState,
+            endTime: session.endTime,
+          } as Partial<AgentSession>);
+        } catch (error) {
+          console.error('[AgentSessionManager] Failed to persist status change to database:', error);
+        }
       }
     }
   }

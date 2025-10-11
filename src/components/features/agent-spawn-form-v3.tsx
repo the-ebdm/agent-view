@@ -40,8 +40,14 @@ export function AgentSpawnFormV3({ onSpawn, collapsed, onToggleCollapse }: Agent
 
   // Load saved configs and recent agents
   useEffect(() => {
-    setSavedConfigs(AgentConfigStorage.getConfigs());
-    setRecentAgents(AgentConfigStorage.getRecent());
+    (async () => {
+      const [configs, recent] = await Promise.all([
+        AgentConfigStorage.getConfigs(),
+        AgentConfigStorage.getRecent(),
+      ]);
+      setSavedConfigs(configs);
+      setRecentAgents(recent);
+    })();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,14 +99,15 @@ export function AgentSpawnFormV3({ onSpawn, collapsed, onToggleCollapse }: Agent
       const data = await response.json();
 
       // Add to recent
-      AgentConfigStorage.addToRecent({
+      await AgentConfigStorage.addToRecent({
         name: name.trim() || 'Unnamed Agent',
         prompt,
         directory,
         toolPreset: preset,
         customTools: preset === 'custom' ? Array.from(customTools) : undefined,
       });
-      setRecentAgents(AgentConfigStorage.getRecent());
+      const recent = await AgentConfigStorage.getRecent();
+      setRecentAgents(recent);
 
       // Clear form
       setPrompt('');
@@ -150,13 +157,13 @@ export function AgentSpawnFormV3({ onSpawn, collapsed, onToggleCollapse }: Agent
     setError(null);
   };
 
-  const handleSaveConfig = () => {
+  const handleSaveConfig = async () => {
     if (!configName.trim()) {
       setError('Configuration name is required');
       return;
     }
 
-    AgentConfigStorage.saveConfig({
+    await AgentConfigStorage.saveConfig({
       name: configName,
       prompt,
       directory,
@@ -164,14 +171,16 @@ export function AgentSpawnFormV3({ onSpawn, collapsed, onToggleCollapse }: Agent
       customTools: preset === 'custom' ? Array.from(customTools) : undefined,
     });
 
-    setSavedConfigs(AgentConfigStorage.getConfigs());
+    const configs = await AgentConfigStorage.getConfigs();
+    setSavedConfigs(configs);
     setShowSaveConfig(false);
     setConfigName('');
   };
 
-  const handleDeleteConfig = (id: string) => {
-    AgentConfigStorage.deleteConfig(id);
-    setSavedConfigs(AgentConfigStorage.getConfigs());
+  const handleDeleteConfig = async (id: string) => {
+    await AgentConfigStorage.deleteConfig(id);
+    const configs = await AgentConfigStorage.getConfigs();
+    setSavedConfigs(configs);
   };
 
   const filteredTemplates = selectedCategory === 'all'
