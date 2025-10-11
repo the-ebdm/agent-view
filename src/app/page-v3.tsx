@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { ActiveAgentsDashboard } from '@/components/features/active-agents-dashboard';
-import { AgentSpawnModal } from '@/components/features/agent-spawn-modal';
+import { AgentSpawnFormV3 } from '@/components/features/agent-spawn-form-v3';
 import { AgentHistoryList } from '@/components/features/agent-history-list';
 import { OpenSpecSection } from '@/components/openspec/openspec-section';
 import { HelpModal } from '@/components/features/help-modal';
@@ -19,17 +19,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 function DashboardContent() {
   const { agents, refreshAgents } = useActiveAgents();
   const { history } = useAgentHistory();
-  const [showSpawnModal, setShowSpawnModal] = useState(false); // Modal starts closed
+  const [showSpawnForm, setShowSpawnForm] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
-  const [activeTab, setActiveTab] = useState('agents'); // Default to agents tab
+  const [activeTab, setActiveTab] = useState('agents');
 
   // Keyboard shortcuts
   useKeyboardShortcuts([
     {
       key: 'k',
       meta: true,
-      description: 'Open spawn modal',
-      action: () => setShowSpawnModal(true),
+      description: 'Toggle spawn form',
+      action: () => setShowSpawnForm(!showSpawnForm),
     },
     {
       key: 'h',
@@ -69,8 +69,10 @@ function DashboardContent() {
   ]);
 
   const handleSpawnComplete = () => {
-    // Close modal after spawning agent
-    setShowSpawnModal(false);
+    // Optionally hide spawn form on mobile after spawning
+    if (window.innerWidth < 1024) {
+      setShowSpawnForm(false);
+    }
   };
 
   return (
@@ -101,7 +103,7 @@ function DashboardContent() {
 
             {/* Spawn Button */}
             <Button
-              onClick={() => setShowSpawnModal(true)}
+              onClick={() => setShowSpawnForm(!showSpawnForm)}
               size="sm"
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               title="Spawn Agent (⌘K)"
@@ -125,9 +127,21 @@ function DashboardContent() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Full Width Main Content - Tabbed Navigation */}
-        <div>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Sidebar - Spawn Form */}
+          <div className={`lg:col-span-1 ${showSpawnForm ? 'block' : 'hidden lg:block'}`}>
+            <div className="sticky top-24">
+              <AgentSpawnFormV3
+                onSpawn={handleSpawnComplete}
+                collapsed={!showSpawnForm}
+                onToggleCollapse={() => setShowSpawnForm(!showSpawnForm)}
+              />
+            </div>
+          </div>
+
+          {/* Main Content - Tabbed Navigation */}
+          <div className={`lg:col-span-3 ${showSpawnForm ? 'hidden lg:block' : 'block'}`}>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
               <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-t-lg border border-gray-200 dark:border-gray-700">
                 <TabsList className="px-4">
                   <TabsTrigger value="agents" icon="🤖" badge={agents.length}>
@@ -163,7 +177,7 @@ function DashboardContent() {
                         Spawn an agent to start building your history
                       </p>
                       <Button
-                        onClick={() => setShowSpawnModal(true)}
+                        onClick={() => setShowSpawnForm(true)}
                         className="bg-gradient-to-r from-blue-600 to-purple-600"
                       >
                         + Spawn First Agent
@@ -200,7 +214,7 @@ function DashboardContent() {
                     Pro Tips
                   </h4>
                   <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                    <li>• Press <kbd className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">⌘K</kbd> to open spawn modal</li>
+                    <li>• Press <kbd className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">⌘K</kbd> to toggle spawn form</li>
                     <li>• Use templates for common tasks to get started quickly</li>
                     <li>• Save configurations you use frequently</li>
                     <li>• Press <kbd className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">⌘H</kbd> for help & shortcuts</li>
@@ -209,17 +223,22 @@ function DashboardContent() {
               </div>
             </div>
           </div>
+        </div>
       </main>
 
       {/* Help Modal */}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
 
-      {/* Spawn Agent Modal */}
-      <AgentSpawnModal
-        isOpen={showSpawnModal}
-        onClose={() => setShowSpawnModal(false)}
-        onSpawn={handleSpawnComplete}
-      />
+      {/* Mobile Toggle Hint */}
+      {!showSpawnForm && (
+        <button
+          onClick={() => setShowSpawnForm(true)}
+          className="lg:hidden fixed bottom-6 right-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all z-20"
+          title="Spawn Agent (⌘K)"
+        >
+          <span className="text-2xl">+</span>
+        </button>
+      )}
     </div>
   );
 }

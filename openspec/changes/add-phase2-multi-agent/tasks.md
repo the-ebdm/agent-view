@@ -40,7 +40,7 @@
 ## 5. API Routes - New Endpoints
 
 - [x] 5.1 Create `/api/agents` (GET) - list all active agents
-- [x] 5.2 Create `/api/agents/[id]/pause` (POST) - pause agent
+- [ ] 5.2 Create `/api/agents/[id]/pause` (POST) - pause agent
 - [x] 5.3 Create `/api/agents/[id]/resume` (POST) - resume agent
 - [x] 5.4 Create `/api/agents/[id]/stop` (POST) - stop agent
 - [x] 5.5 Create `/api/agents/[id]/restart` (POST) - restart with same config
@@ -51,7 +51,7 @@
 - [x] 6.1 Update `/api/agents/spawn` to accept `name` parameter (optional)
 - [x] 6.2 Update `/api/agents/spawn` to accept `toolPermissions` parameter
 - [x] 6.3 Update `/api/agents/[id]/status` to include lifecycle state and metrics
-- [ ] 6.4 Update `/api/agents/[id]/stream` to support paused state (queue messages)
+- [x] 6.4 Update `/api/agents/[id]/stream` to support paused state (queue messages)
 
 ## 7. Agent Naming System
 

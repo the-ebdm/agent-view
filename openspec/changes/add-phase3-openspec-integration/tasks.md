@@ -63,23 +63,23 @@
 
 ## 7. API Routes - Validation
 
-- [ ] 7.1 Create `src/app/api/openspec/validate/[id]/route.ts` for validation
-- [ ] 7.2 Implement POST to trigger validation for change
-- [ ] 7.3 Add debouncing via Redis/in-memory cache (500ms)
-- [ ] 7.4 Implement validation result caching (30s, keyed by content hash)
-- [ ] 7.5 Add rate limiting (max 10/sec per user)
-- [ ] 7.6 Implement timeout handling (5s default, 10s retry)
-- [ ] 7.7 Format validation errors for UI display
+- [x] 7.1 Create `src/app/api/openspec/validate/[id]/route.ts` for validation
+- [x] 7.2 Implement POST to trigger validation for change
+- [x] 7.3 Add debouncing via Redis/in-memory cache (500ms)
+- [x] 7.4 Implement validation result caching (30s, keyed by content hash)
+- [x] 7.5 Add rate limiting (max 10/sec per user)
+- [x] 7.6 Implement timeout handling (5s default, 10s retry)
+- [x] 7.7 Format validation errors for UI display
 
 ## 8. API Routes - Slash Commands
 
-- [ ] 8.1 Create `src/app/api/slash-command/route.ts` for command execution
-- [ ] 8.2 Implement POST to execute slash commands from `.claude/commands/`
-- [ ] 8.3 Add command whitelist for security (only openspec:*)
-- [ ] 8.4 Capture stdout/stderr from command execution
-- [ ] 8.5 Implement command timeout (30s)
-- [ ] 8.6 Add audit logging for command execution
-- [ ] 8.7 Return structured response with status, output, errors
+- [x] 8.1 Create `src/app/api/slash-command/route.ts` for command execution
+- [x] 8.2 Implement POST to execute slash commands from `.claude/commands/`
+- [x] 8.3 Add command whitelist for security (only openspec:*)
+- [x] 8.4 Capture stdout/stderr from command execution
+- [x] 8.5 Implement command timeout (30s)
+- [x] 8.6 Add audit logging for command execution
+- [x] 8.7 Return structured response with status, output, errors
 
 ## 9. Dashboard Integration
 
@@ -135,14 +135,14 @@
 
 ## 14. Markdown Editor
 
-- [ ] 14.1 Create `src/components/openspec/markdown-editor.tsx` component
-- [ ] 14.2 Implement split-pane layout (editor left, preview right)
-- [ ] 14.3 Add textarea with basic syntax highlighting
-- [ ] 14.4 Implement real-time preview update
-- [ ] 14.5 Create `src/components/openspec/editor-toolbar.tsx` for formatting buttons
-- [ ] 14.6 Add toolbar buttons: Bold, Italic, Code, Code Block, List, Heading
-- [ ] 14.7 Implement formatting actions (wrap selected text, insert at cursor)
-- [ ] 14.8 Add keyboard shortcuts (Ctrl+B, Ctrl+I, etc.)
+- [x] 14.1 Create `src/components/openspec/markdown-editor.tsx` component
+- [x] 14.2 Implement split-pane layout (editor left, preview right)
+- [x] 14.3 Add textarea with basic syntax highlighting
+- [x] 14.4 Implement real-time preview update
+- [x] 14.5 Create `src/components/openspec/editor-toolbar.tsx` for formatting buttons
+- [x] 14.6 Add toolbar buttons: Bold, Italic, Code, Code Block, List, Heading
+- [x] 14.7 Implement formatting actions (wrap selected text, insert at cursor)
+- [x] 14.8 Add keyboard shortcuts (Ctrl+B, Ctrl+I, etc.)
 
 ## 15. Mobile Editor Layout
 
@@ -155,73 +155,73 @@
 
 ## 16. Auto-Save Functionality
 
-- [ ] 16.1 Implement auto-save timer (5s interval)
-- [ ] 16.2 Track content changes since last save
-- [ ] 16.3 Show "Saving..." indicator during save
-- [ ] 16.4 Show "Saved" indicator with timestamp after success
+- [x] 16.1 Implement auto-save timer (5s interval)
+- [x] 16.2 Track content changes since last save
+- [x] 16.3 Show "Saving..." indicator during save
+- [x] 16.4 Show "Saved" indicator with timestamp after success
 - [ ] 16.5 Implement save on modal close
 - [ ] 16.6 Add confirmation prompt for unsaved changes on close
 - [ ] 16.7 Store last save timestamp in component state
 
 ## 17. Validation UI
 
-- [ ] 17.1 Create `src/components/openspec/validation-indicator.tsx` component
-- [ ] 17.2 Implement status icons: ⏳ pending, ✅ valid, ❌ invalid, 🔄 validating
-- [ ] 17.3 Add status text and error count display
-- [ ] 17.4 Create `src/components/openspec/validation-panel.tsx` for error display
-- [ ] 17.5 Implement collapsible error panel below editor
-- [ ] 17.6 Display error list with file, line number, message
-- [ ] 17.7 Add "Jump to error" buttons for each error
+- [x] 17.1 Create `src/components/openspec/validation-indicator.tsx` component
+- [x] 17.2 Implement status icons: ⏳ pending, ✅ valid, ❌ invalid, 🔄 validating
+- [x] 17.3 Add status text and error count display
+- [x] 17.4 Create `src/components/openspec/validation-panel.tsx` for error display
+- [x] 17.5 Implement collapsible error panel below editor
+- [x] 17.6 Display error list with file, line number, message
+- [x] 17.7 Add "Jump to error" buttons for each error
 - [ ] 17.8 Implement line highlighting for errors in editor
 
 ## 18. Validation Integration
 
-- [ ] 18.1 Add validation status to card state
-- [ ] 18.2 Trigger validation on editor content change (500ms debounce)
-- [ ] 18.3 Show validation indicator on card
-- [ ] 18.4 Update validation panel in editor
-- [ ] 18.5 Implement manual "Validate" button on card
-- [ ] 18.6 Implement manual "Validate" button in editor toolbar
+- [x] 18.1 Add validation status to card state
+- [x] 18.2 Trigger validation on editor content change (500ms debounce)
+- [x] 18.3 Show validation indicator on card
+- [x] 18.4 Update validation panel in editor
+- [x] 18.5 Implement manual "Validate" button on card
+- [x] 18.6 Implement manual "Validate" button in editor toolbar
 - [ ] 18.7 Add "Validate All" button to dashboard
 
 ## 19. Task Checklist
 
-- [ ] 19.1 Create `src/components/openspec/task-checklist.tsx` component
-- [ ] 19.2 Parse tasks.md for checklist items (`- [ ]` / `- [x]`)
-- [ ] 19.3 Render interactive checkboxes for each task
-- [ ] 19.4 Implement checkbox toggle handler (update tasks.md)
-- [ ] 19.5 Show progress bar: X/Y tasks complete
+- [x] 19.1 Create `src/components/openspec/task-checklist.tsx` component
+- [x] 19.2 Parse tasks.md for checklist items (`- [ ]` / `- [x]`)
+- [x] 19.3 Render interactive checkboxes for each task
+- [x] 19.4 Implement checkbox toggle handler (update tasks.md)
+- [x] 19.5 Show progress bar: X/Y tasks complete
 - [ ] 19.6 Add "Add Task" button with input field
-- [ ] 19.7 Update card progress bar when tasks change
+- [x] 19.7 Update card progress bar when tasks change
 
 ## 20. Change Status Management
 
-- [ ] 20.1 Implement status derivation from task completion percentage
-- [ ] 20.2 Add status indicator to change cards (Pending, In Progress, Complete)
-- [ ] 20.3 Update status when tasks change
-- [ ] 20.4 Enable "Archive" button only when status is "Complete"
+- [x] 20.1 Implement status derivation from task completion percentage
+- [x] 20.2 Add status indicator to change cards (Pending, In Progress, Complete)
+- [x] 20.3 Update status when tasks change
+- [x] 20.4 Enable "Archive" button only when status is "Complete"
 - [ ] 20.5 Add status filter to dashboard ("Show only Complete")
 
 ## 21. Slash Command Buttons
 
-- [ ] 21.1 Create `src/components/openspec/slash-command-button.tsx` component
-- [ ] 21.2 Add "New Proposal" button to dashboard
-- [ ] 21.3 Implement dialog for change ID input with validation
-- [ ] 21.4 Execute `/openspec:proposal [change-id]` on confirm
-- [ ] 21.5 Add "Apply" button to change cards
-- [ ] 21.6 Execute `/openspec:apply [change-id]` and show output
-- [ ] 21.7 Add "Archive" button to complete change cards
-- [ ] 21.8 Implement archive confirmation dialog with options
+- [x] 21.1 Create `src/components/openspec/slash-command-button.tsx` component
+- [x] 21.2 Add "New Proposal" button to dashboard
+- [x] 21.3 Implement dialog for change ID input with validation
+- [x] 21.4 Execute `/openspec:proposal [change-id]` on confirm
+- [x] 21.5 Add "Apply" button to change cards
+- [x] 21.6 Execute `/openspec:apply [change-id]` and show output
+- [x] 21.7 Add "Archive" button to complete change cards
+- [x] 21.8 Implement archive confirmation dialog with options
 
 ## 22. Archive Workflow
 
-- [ ] 22.1 Create archive confirmation dialog component
-- [ ] 22.2 Add checkboxes for --skip-specs and --yes flags
-- [ ] 22.3 Show warning about moving to archive/
-- [ ] 22.4 Execute `/openspec:archive [change-id]` with flags
-- [ ] 22.5 Show archiving progress indicator
-- [ ] 22.6 Refresh dashboard after archive completes
-- [ ] 22.7 Block archive if validation is invalid (add override option)
+- [x] 22.1 Create archive confirmation dialog component
+- [x] 22.2 Add checkboxes for --skip-specs and --yes flags
+- [x] 22.3 Show warning about moving to archive/
+- [x] 22.4 Execute `/openspec:archive [change-id]` with flags
+- [x] 22.5 Show archiving progress indicator
+- [x] 22.6 Refresh dashboard after archive completes
+- [x] 22.7 Block archive if validation is invalid (add override option)
 
 ## 23. File Management
 

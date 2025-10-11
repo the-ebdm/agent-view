@@ -5,11 +5,12 @@
 
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { CapabilityCard } from './capability-card';
 import { ChangeCard } from './change-card';
 import { ArchiveCard } from './archive-card';
-import { OpenSpecModal } from './openspec-modal';
+import { OpenSpecModalEnhanced } from './openspec-modal-enhanced';
+import { NewProposalButton } from './slash-command-button';
 import type {
   CapabilitySpec,
   ChangeProposal,
@@ -28,28 +29,28 @@ export function OpenSpecSection() {
   const [filterType, setFilterType] = useState<'all' | 'spec' | 'change' | 'archive'>('all');
 
   // Fetch OpenSpec entities
-  useEffect(() => {
-    async function fetchEntities() {
-      setLoading(true);
-      setError(null);
+  const fetchEntities = useCallback(async () => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const response = await fetch('/api/openspec/list');
-        if (!response.ok) throw new Error('Failed to fetch OpenSpec entities');
+    try {
+      const response = await fetch('/api/openspec/list');
+      if (!response.ok) throw new Error('Failed to fetch OpenSpec entities');
 
-        const data = await response.json();
-        setSpecs(data.specs || []);
-        setChanges(data.changes || []);
-        setArchives(data.archives || []);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load OpenSpec data');
-      } finally {
-        setLoading(false);
-      }
+      const data = await response.json();
+      setSpecs(data.specs || []);
+      setChanges(data.changes || []);
+      setArchives(data.archives || []);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load OpenSpec data');
+    } finally {
+      setLoading(false);
     }
-
-    fetchEntities();
   }, []);
+
+  useEffect(() => {
+    fetchEntities();
+  }, [fetchEntities]);
 
   // Filter entities based on search and type
   const filteredSpecs = specs.filter((spec) =>
@@ -89,36 +90,49 @@ export function OpenSpecSection() {
     <div className="space-y-6">
       {/* Header with Search and Filter */}
       <div className="bg-gray-800/50 dark:bg-gray-800/50 rounded-lg shadow-sm border border-gray-700 dark:border-gray-700 p-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">📁</span>
-            <div>
-              <h2 className="text-lg font-semibold text-white dark:text-white">OpenSpec</h2>
-              <p className="text-xs text-gray-400 dark:text-gray-400">{totalCount} entities</p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">📁</span>
+              <div>
+                <h2 className="text-lg font-semibold text-white dark:text-white">OpenSpec</h2>
+                <p className="text-xs text-gray-400 dark:text-gray-400">{totalCount} entities</p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex-1 flex gap-2">
-            {/* Search */}
-            <input
-              type="text"
-              placeholder="Search specs, changes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 px-3 py-2 text-sm bg-gray-900/50 border border-gray-600 text-white placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div className="flex-1 flex gap-2">
+              {/* Search */}
+              <input
+                type="text"
+                placeholder="Search specs, changes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-3 py-2 text-sm bg-gray-900/50 border border-gray-600 text-white placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              {/* Filter */}
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as any)}
+                className="px-3 py-2 text-sm bg-gray-900/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All</option>
+                <option value="spec">Specs</option>
+                <option value="change">Changes</option>
+                <option value="archive">Archives</option>
+              </select>
+            </div>
+
+            {/* New Proposal Button */}
+            <NewProposalButton
+              onSuccess={(output) => {
+                console.log('Proposal created:', output);
+                fetchEntities();
+              }}
+              onError={(error) => {
+                console.error('Failed to create proposal:', error);
+              }}
             />
-
-            {/* Filter */}
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className="px-3 py-2 text-sm bg-gray-900/50 border border-gray-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All</option>
-              <option value="spec">Specs</option>
-              <option value="change">Changes</option>
-              <option value="archive">Archives</option>
-            </select>
           </div>
         </div>
       </div>
@@ -192,9 +206,12 @@ export function OpenSpecSection() {
 
       {/* Modal */}
       {selectedEntity && (
-        <OpenSpecModal
+        <OpenSpecModalEnhanced
           entity={selectedEntity}
           onClose={() => setSelectedEntity(null)}
+          onUpdate={() => {
+            fetchEntities();
+          }}
         />
       )}
     </div>
