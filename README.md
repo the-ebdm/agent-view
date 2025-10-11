@@ -171,7 +171,7 @@ See `openspec/project.md` for detailed conventions and `openspec/AGENTS.md` for 
 - Agents have full access to the Claude Agent SDK toolset within their assigned directories
 - The UI is designed for local network access only
 - **Never expose this application directly to the public internet**
-  - I will use Tailscale to secure the network and only allow access to the application from my phone and my laptop.
+  - I will personally use Tailscale to secure the network and only allow access to the application from my phone and my laptop. I'd recommend doing something similar if you want to use the application outside your network.
 - Each agent requires an API key with appropriate Anthropic usage limits
 - Consider using tool permission restrictions for sensitive operations
 
