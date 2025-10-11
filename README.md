@@ -181,7 +181,7 @@ Contributions are welcome! This project is in early development, so there are ma
 
 ## License
 
-UNLICENSED Closed Source for now.
+WTFPL ("Do What The Fuck You Want To Public License") - I wrote this in an evening with Claude Code.
 
 ## Resources
 
