@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "setup": "./conductor-setup.sh",
+    "run": "npm run dev",
+    "archive": "echo 'Cleaning up agent-view workspace...'"
+  },
+  "runScriptMode": "nonconcurrent"
+}
