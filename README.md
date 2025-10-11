@@ -48,22 +48,19 @@ The SDK handles automatic context management, file operations, code execution, a
 ### Prerequisites
 
 - Node.js 18+ or Bun
-- Anthropic API Key ([get one here](https://console.anthropic.com))
+- Claude Code (logged in with Pro or Max plan)
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/agent-view.git
+git clone https://github.com/the-ebdm/agent-view.git
 cd agent-view
 
 # Install dependencies
 npm install
 # or
 bun install
-
-# Set your API key
-export ANTHROPIC_API_KEY=your_api_key_here
 
 # Run development server
 npm run dev
@@ -72,15 +69,6 @@ bun dev
 ```
 
 Access the UI at [http://localhost:3000](http://localhost:3000)
-
-### Configuration
-
-You can configure agent behavior through environment variables:
-
-```bash
-ANTHROPIC_API_KEY=your_key_here
-NEXT_PUBLIC_API_URL=http://localhost:3000
-```
 
 ## Architecture
 
@@ -136,26 +124,46 @@ See `openspec/project.md` for detailed conventions and `openspec/AGENTS.md` for 
 
 ⚠️ **Early Development** - This project is actively being built. Current priorities:
 
-### Phase 1: Foundation (Current)
-- [ ] Basic multi-agent spawning and management
-- [ ] Real-time streaming UI
-- [ ] Mobile-responsive interface
-- [ ] Agent-to-directory assignment
+## Project Roadmap
 
-### Phase 2: Multi-Agent
-- [ ] Tool permission configuration
-- [ ] Session persistence
-- [ ] Agent lifecycle management (pause, resume, stop)
+### Phase 1: Foundation (Completed ✓)
+
+- [x] Basic Next.js + Claude Agent SDK integration
+- [x] Single agent spawning and monitoring
+- [x] Real-time output streaming
+- [x] Mobile-responsive UI
+
+### Phase 1.5: Agent Execution Flow (Completed ✓)
+
+- [x] Background agent execution architecture
+- [x] Publisher-subscriber message broadcasting
+- [x] Agent execution persistence (agents run independently of stream connections)
+- [x] Message buffering for late subscribers
+- [x] Resource management (concurrent agent limits, cleanup)
+
+### Phase 2: Multi-Agent (Completed ✓)
+
+- [x] Multiple agent instances (full support)
+- [x] Per-agent directory assignment
+- [x] Agent lifecycle management (start, stop) - Backend complete
+- [x] Agent lifecycle management (pause, resume) - Backend partially complete, deferred for generator state management
+- [x] Tool permission configuration (backend + UI complete)
+- [x] Agent naming system (auto-generation + uniqueness)
+- [x] State management (React Context + polling)
+- [x] Multi-agent dashboard UI (card grid, modal interactions)
 
 ### Phase 3: OpenSpec Integration
-- [ ] OpenSpec viewer in UI
-- [ ] Spec validation guardrails for agents
+
+- [x] OpenSpec viewer in UI
+- [x] Spec validation guardrails
 - [ ] Change proposal workflow support
 - [ ] In-app spec navigation
 
-### Phase 4: Advanced Features
-- [ ] Agent collaboration features
+### Phase 4: Advanced Features (Future)
+
+- [ ] Agent collaboration (agents working together)
 - [ ] Task queuing and scheduling
+- [ ] Session persistence across restarts
 - [ ] Linear/GitHub integrations
 
 ## Security Considerations

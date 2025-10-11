@@ -291,8 +291,8 @@ src/
 
 ### Phase 3: OpenSpec Integration
 
-- [ ] OpenSpec viewer in UI
-- [ ] Spec validation guardrails
+- [x] OpenSpec viewer in UI
+- [x] Spec validation guardrails
 - [ ] Change proposal workflow support
 - [ ] In-app spec navigation
 
