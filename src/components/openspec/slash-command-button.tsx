@@ -157,7 +157,7 @@ export function SlashCommandButton({
   // Button variants
   const variantClasses = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800',
+    secondary: 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200',
     danger: 'bg-red-600 hover:bg-red-700 text-white',
   };
 
