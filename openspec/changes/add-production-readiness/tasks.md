@@ -320,15 +320,15 @@
 
 ## 14. Archive Previous Changes
 
-- [ ] 14.1 Archive `add-sqlite-persistence`
+- [x] 14.1 Archive `add-sqlite-persistence`
   - Run `openspec archive add-sqlite-persistence`
   - Verify change moved to archive directory
   - Update project.md roadmap status
-- [ ] 14.2 Archive `add-projects-data-model`
+- [x] 14.2 Archive `add-projects-data-model`
   - Run `openspec archive add-projects-data-model`
   - Verify change moved to archive directory
   - Update project.md roadmap status
-- [ ] 14.3 Archive `add-openspec-database-cache`
+- [x] 14.3 Archive `add-openspec-database-cache`
   - Run `openspec archive add-openspec-database-cache`
   - Verify change moved to archive directory
   - Update project.md roadmap status
