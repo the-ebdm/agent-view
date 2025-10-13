@@ -2,7 +2,7 @@
 
 import { useOpenSpecSync } from '@/hooks/use-openspec-sync';
 import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * Format relative time (e.g., "2 minutes ago")
@@ -39,7 +39,7 @@ export function OpenSpecSyncStatus() {
   });
 
   const [showNotification, setShowNotification] = useState(false);
-  const [notificationTimeout, setNotificationTimeout] = useState<NodeJS.Timeout | null>(null);
+  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Show notification when sync completes
   useEffect(() => {
@@ -47,8 +47,8 @@ export function OpenSpecSyncStatus() {
       setShowNotification(true);
 
       // Clear previous timeout if exists
-      if (notificationTimeout) {
-        clearTimeout(notificationTimeout);
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
       }
 
       // Auto-dismiss notification after 5 seconds
@@ -57,15 +57,15 @@ export function OpenSpecSyncStatus() {
         clearSyncResult();
       }, 5000);
 
-      setNotificationTimeout(timeout);
+      notificationTimeoutRef.current = timeout;
     }
 
     return () => {
-      if (notificationTimeout) {
-        clearTimeout(notificationTimeout);
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
       }
     };
-  }, [lastSyncResult, clearSyncResult, notificationTimeout]);
+  }, [lastSyncResult, clearSyncResult]);
 
   const handleSync = async () => {
     await triggerSync();
@@ -74,8 +74,8 @@ export function OpenSpecSyncStatus() {
   const handleDismissNotification = () => {
     setShowNotification(false);
     clearSyncResult();
-    if (notificationTimeout) {
-      clearTimeout(notificationTimeout);
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
     }
   };
 
