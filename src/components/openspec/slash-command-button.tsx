@@ -13,7 +13,7 @@ import {
   type OpenSpecChangeContext,
 } from "@/lib/openspec/prompt-builder";
 
-type CommandType = "proposal" | "apply" | "archive";
+type CommandType = "proposal" | "apply" | "review" | "archive";
 
 interface SlashCommandButtonProps {
   command: CommandType;
@@ -50,6 +50,13 @@ const COMMAND_CONFIG: Record<
     label: "Apply Change",
     icon: "⚡",
     description: "Apply an OpenSpec change proposal",
+    promptLabel: "Change ID",
+    placeholder: "e.g., add-new-feature",
+  },
+  review: {
+    label: "Review Change",
+    icon: "🔍",
+    description: "Review an OpenSpec change proposal",
     promptLabel: "Change ID",
     placeholder: "e.g., add-new-feature",
   },
@@ -109,7 +116,8 @@ export function SlashCommandButton({
     try {
       await spawnOpenSpecAgent(id);
     } catch (err: unknown) {
-      const errorText = err.message || "Failed to spawn agent";
+      const errorText =
+        err instanceof Error ? err.message : "Failed to spawn agent";
       setError(errorText);
       onError?.(errorText);
     } finally {
@@ -132,12 +140,22 @@ export function SlashCommandButton({
 
         case "apply":
           // Use provided context or create minimal context
-          const context: OpenSpecChangeContext = changeContext || {
+          const applyContext: OpenSpecChangeContext = changeContext || {
             changeId: id,
             name: id,
           };
-          prompt = buildApplyChangePrompt(context, projectDirectory);
-          agentName = `Apply - ${context.name}`;
+          prompt = buildApplyChangePrompt(applyContext, projectDirectory);
+          agentName = `Apply - ${applyContext.name}`;
+          break;
+
+        case "review":
+          // Use provided context or create minimal context
+          const reviewContext: OpenSpecChangeContext = changeContext || {
+            changeId: id,
+            name: id,
+          };
+          prompt = buildApplyChangePrompt(reviewContext, projectDirectory);
+          agentName = `Review - ${reviewContext.name}`;
           break;
 
         case "archive":
@@ -180,6 +198,10 @@ export function SlashCommandButton({
         case "apply":
           successMessage +=
             "The agent will implement the change according to the approved proposal.\nYou can monitor progress in the main dashboard.";
+          break;
+        case "review":
+          successMessage +=
+            "The agent will review the change proposal.\nYou can monitor progress in the main dashboard.";
           break;
         case "archive":
           successMessage +=
@@ -365,6 +387,12 @@ export function ApplyChangeButton(
   props: Omit<SlashCommandButtonProps, "command">
 ) {
   return <SlashCommandButton command="apply" variant="primary" {...props} />;
+}
+
+export function ReviewChangeButton(
+  props: Omit<SlashCommandButtonProps, "command">
+) {
+  return <SlashCommandButton command="review" variant="primary" {...props} />;
 }
 
 export function ArchiveChangeButton(

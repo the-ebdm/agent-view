@@ -108,6 +108,41 @@ Ready to begin implementation!
 }
 
 /**
+ * Build prompt for reviewing a change proposal
+ */
+export function buildReviewChangePrompt(
+  context: OpenSpecChangeContext,
+  projectDirectory?: string
+): string {
+  let prompt = `Review the OpenSpec change proposal: ${context.changeId}
+
+**Change: ${context.name}**
+
+`;
+
+  if (projectDirectory) {
+    prompt += `**Working Directory:** ${projectDirectory}\n`;
+  }
+
+  prompt += `
+
+**Guardrails**
+- Review the change proposal and provide feedback on the proposed changes.
+- Identify any vague or ambiguous details and ask the necessary follow-up questions before editing files.
+- Refer to \`openspec/AGENTS.md\` (located inside the \`openspec/\` directory—run \`ls openspec\` or \`openspec update\` if you don't see it) if you need additional OpenSpec conventions or clarifications.
+
+**Steps**
+1. Review \`openspec/project.md\`, run \`openspec list\` and \`openspec list --specs\`, and inspect related code or docs (e.g., via \`rg\`/\`ls\`) to ground the proposal in current behaviour; note any gaps that require clarification.
+2. Review \`openspec/changes/<id>/proposal.md\`, \`design.md\` (if present), and \`tasks.md\` to confirm scope and acceptance criteria.
+3. Validate with \`openspec validate <id> --strict\` and resolve every issue before sharing the proposal.
+4. Check for the existence of any files mentioned by the tasks.md and review the implementation.
+5. Update tasks.md to reflect the progress of the change.
+6. Provide feedback on the proposed changes and ask the necessary follow-up questions before editing files or parallelizable work.
+`;
+  return prompt;
+}
+
+/**
  * Build prompt for creating a new OpenSpec proposal
  */
 export function buildProposalPrompt(

@@ -137,23 +137,16 @@ export function useApprovals(agentId: string) {
     throw new Error('useApprovals must be used within ApprovalsProvider');
   }
 
-  const [approvals, setApprovals] = useState<AgentApprovals | undefined>(undefined);
+  // Get approvals directly from context - no local state or polling needed
+  // The context handles all polling centrally
+  const approvals = context.getApprovals(agentId);
 
+  // Trigger initial fetch if this agent hasn't been seen before
   useEffect(() => {
-    // Initial fetch
-    context.refreshApprovals(agentId);
-
-    // Subscribe to updates by checking context periodically
-    // Note: getApprovals is now stable and won't cause infinite loops
-    const interval = setInterval(() => {
-      const data = context.getApprovals(agentId);
-      setApprovals(data);
-    }, 500); // Check for updates frequently, but polling happens centrally
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [agentId, context]);
+    if (!approvals) {
+      context.refreshApprovals(agentId);
+    }
+  }, [agentId, approvals, context]);
 
   return {
     approvalCount: approvals?.count || 0,
