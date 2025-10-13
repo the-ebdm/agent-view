@@ -6,6 +6,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import {
+  buildApplyChangePrompt,
+  buildProposalPrompt,
+  buildArchivePrompt,
+  type OpenSpecChangeContext,
+} from '@/lib/openspec/prompt-builder';
 
 type CommandType = 'proposal' | 'apply' | 'archive';
 
@@ -18,6 +24,9 @@ interface SlashCommandButtonProps {
   variant?: 'primary' | 'secondary' | 'danger';
   disabled?: boolean;
   children?: React.ReactNode;
+  // OpenSpec context for enriched prompts (apply command)
+  changeContext?: OpenSpecChangeContext;
+  projectDirectory?: string;
 }
 
 const COMMAND_CONFIG: Record<CommandType, {
@@ -59,6 +68,8 @@ export function SlashCommandButton({
   variant = 'primary',
   disabled = false,
   children,
+  changeContext,
+  projectDirectory,
 }: SlashCommandButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
   const [changeId, setChangeId] = useState('');
@@ -86,53 +97,100 @@ export function SlashCommandButton({
     }
   };
 
-  // Execute the slash command
+  // Execute the slash command by spawning an agent
   const executeCommand = async (id: string) => {
     setIsExecuting(true);
     setOutput(null);
     setError(null);
 
     try {
-      // Build args based on command type
-      let args = id;
-      if (command === 'archive') {
-        if (skipSpecs) args += ' --skip-specs';
-        if (autoYes) args += ' --yes';
-      }
-
-      // Call API to execute command
-      const response = await fetch('/api/slash-command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          command,
-          args,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const outputText = result.stdout || 'Command executed successfully';
-        setOutput(outputText);
-        onSuccess?.(outputText);
-
-        // Close dialog after short delay
-        setTimeout(() => {
-          setShowDialog(false);
-        }, 2000);
-      } else {
-        const errorText = result.stderr || result.error || 'Command failed';
-        setError(errorText);
-        onError?.(errorText);
-      }
-
+      await spawnOpenSpecAgent(id);
     } catch (err: any) {
-      const errorText = err.message || 'Failed to execute command';
+      const errorText = err.message || 'Failed to spawn agent';
       setError(errorText);
       onError?.(errorText);
     } finally {
       setIsExecuting(false);
+    }
+  };
+
+  // Spawn agent for OpenSpec command
+  const spawnOpenSpecAgent = async (id: string) => {
+    try {
+      let prompt: string;
+      let agentName: string;
+
+      // Build prompt based on command type
+      switch (command) {
+        case 'proposal':
+          prompt = buildProposalPrompt(id, projectDirectory);
+          agentName = `Proposal: ${id}`;
+          break;
+
+        case 'apply':
+          // Use provided context or create minimal context
+          const context: OpenSpecChangeContext = changeContext || {
+            changeId: id,
+            name: id,
+          };
+          prompt = buildApplyChangePrompt(context, projectDirectory);
+          agentName = `Apply: ${context.name}`;
+          break;
+
+        case 'archive':
+          prompt = buildArchivePrompt(id, projectDirectory, skipSpecs, autoYes);
+          agentName = `Archive: ${id}`;
+          break;
+
+        default:
+          throw new Error(`Unknown command: ${command}`);
+      }
+
+      // Spawn new agent
+      const response = await fetch('/api/agents/spawn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: agentName,
+          prompt,
+          directory: projectDirectory || process.cwd(),
+          toolPermissions: {
+            preset: 'standard',
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to spawn agent');
+      }
+
+      const { id: agentId, name } = await response.json();
+
+      // Build success message based on command
+      let successMessage = `✓ Agent "${name}" spawned successfully!\n\nAgent ID: ${agentId}\n\n`;
+
+      switch (command) {
+        case 'proposal':
+          successMessage += 'The agent will create a new OpenSpec change proposal.\nYou can monitor progress in the main dashboard.';
+          break;
+        case 'apply':
+          successMessage += 'The agent will implement the change according to the approved proposal.\nYou can monitor progress in the main dashboard.';
+          break;
+        case 'archive':
+          successMessage += 'The agent will archive the completed change.\nYou can monitor progress in the main dashboard.';
+          break;
+      }
+
+      setOutput(successMessage);
+      onSuccess?.(agentId);
+
+      // Close dialog after delay
+      setTimeout(() => {
+        setShowDialog(false);
+      }, 3000);
+
+    } catch (err: any) {
+      throw err;
     }
   };
 

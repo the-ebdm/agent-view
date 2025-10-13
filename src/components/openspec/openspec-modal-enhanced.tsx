@@ -5,13 +5,14 @@
 
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { MarkdownRenderer } from './markdown-renderer';
 import { MarkdownEditor } from './markdown-editor';
 import { TaskChecklist } from './task-checklist';
 import { ValidationIndicator, ValidationStatus } from './validation-indicator';
 import { ApplyChangeButton, ArchiveChangeButton } from './slash-command-button';
 import type { OpenSpecEntity, ChangeProposal, ValidationError } from '@/types/openspec';
+import type { OpenSpecChangeContext } from '@/lib/openspec/prompt-builder';
 
 interface OpenSpecModalProps {
   entity: OpenSpecEntity;
@@ -44,6 +45,40 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
   const isMultiFile = typeof content === 'object';
   const isChange = entity.type === 'change';
   const changeEntity = entity as ChangeProposal;
+
+  // Parse task completion stats from tasks content
+  const taskStats = useMemo(() => {
+    if (!isMultiFile || typeof content !== 'object') return null;
+
+    const tasksContent = (content as any).tasks || '';
+    const lines = tasksContent.split('\n');
+
+    // Count checkbox patterns: [x] for completed, [ ] for incomplete
+    const completed = lines.filter(line => /^\s*-\s*\[x\]/i.test(line)).length;
+    const total = lines.filter(line => /^\s*-\s*\[(x| )\]/i.test(line)).length;
+
+    return total > 0 ? { completed, total } : null;
+  }, [content, isMultiFile]);
+
+  // Build change context for apply button
+  const changeContext = useMemo((): OpenSpecChangeContext | undefined => {
+    if (!isChange || typeof content !== 'object') return undefined;
+
+    const contentObj = content as any;
+
+    return {
+      changeId: entity.id,
+      name: entity.name,
+      status: changeEntity.status,
+      validationStatus,
+      validationErrors,
+      tasksCompleted: taskStats?.completed,
+      tasksTotal: taskStats?.total,
+      proposalContent: contentObj.proposal,
+      designContent: contentObj.design,
+      tasksContent: contentObj.tasks,
+    };
+  }, [entity, changeEntity, validationStatus, validationErrors, taskStats, content, isChange]);
 
   // Fetch content
   useEffect(() => {
@@ -335,6 +370,8 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
               <div className="flex gap-2">
                 <ApplyChangeButton
                   changeId={entity.id}
+                  changeContext={changeContext}
+                  projectDirectory={projectDirectory}
                   variant="secondary"
                   onSuccess={() => {
                     onUpdate?.();
@@ -349,6 +386,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
                 {changeEntity.status === 'completed' && (
                   <ArchiveChangeButton
                     changeId={entity.id}
+                    projectDirectory={projectDirectory}
                     onSuccess={() => {
                       onUpdate?.();
                       onClose();
