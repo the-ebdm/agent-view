@@ -3,6 +3,7 @@ import { generateAgentName, validateAgentName, ensureUniqueName } from './agent-
 import { getDefaultToolPermission, validateToolPermission } from './tool-permissions';
 import { getAgentsRepository, isPersistenceEnabled } from './database';
 import { discoverProject } from './services/project-discovery';
+import { executionManager } from './agent-execution-manager';
 
 class AgentSessionManager {
   private sessions: Map<string, AgentSession> = new Map();
@@ -196,6 +197,15 @@ class AgentSessionManager {
     const session = this.activeAgents.get(id);
     if (!session) {
       throw new Error('Agent not found or not active');
+    }
+
+    // Auto-deny all pending approvals for this agent
+    if (session.pendingApprovals && session.pendingApprovals.length > 0) {
+      console.log(`[SessionManager] Auto-denying ${session.pendingApprovals.length} pending approvals for agent ${id}`);
+      session.pendingApprovals.forEach(approval => {
+        executionManager.resolveApproval(approval.id, false);
+      });
+      session.pendingApprovals = [];
     }
 
     session.lifecycleState = 'stopped';
@@ -431,7 +441,8 @@ class AgentSessionManager {
     session.pendingApprovals.splice(approvalIndex, 1);
     console.log(`[SessionManager] Approved request ${approvalId} for agent ${agentId}`);
 
-    // TODO: Signal to Claude SDK to continue execution
+    // Signal to execution manager to continue agent execution
+    executionManager.resolveApproval(approvalId, true);
   }
 
   /**
@@ -452,7 +463,8 @@ class AgentSessionManager {
     session.pendingApprovals.splice(approvalIndex, 1);
     console.log(`[SessionManager] Denied request ${approvalId} for agent ${agentId}`);
 
-    // TODO: Signal to Claude SDK to abort/skip this tool use
+    // Signal to execution manager to abort this tool use
+    executionManager.resolveApproval(approvalId, false);
   }
 }
 

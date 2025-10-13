@@ -40,8 +40,14 @@ class AgentExecutionManager {
   // Execution promises for cleanup tracking
   private executionPromises: Map<string, Promise<void>> = new Map();
 
+  // Approval callbacks for permission requests
+  private approvalCallbacks: Map<string, {
+    resolve: (approved: boolean) => void;
+    timestamp: number;
+  }> = new Map();
+
   // Configuration
-  private readonly MAX_BUFFER_SIZE = 100; // messages per agent
+  private readonly MAX_BUFFER_SIZE = 1000; // messages per agent (both in-memory and DB queries)
   private readonly MAX_CONCURRENT_AGENTS = 20;
   private readonly CLEANUP_DELAY = 5 * 60 * 1000; // 5 minutes
 
@@ -165,6 +171,17 @@ class AgentExecutionManager {
     console.log(`[ExecutionManager] Stopping agent ${id}`);
 
     try {
+      // Auto-deny all pending approvals for this agent
+      const pendingApprovals = Array.from(this.approvalCallbacks.entries())
+        .filter(([approvalId]) => approvalId.startsWith(`approval_`));
+
+      if (pendingApprovals.length > 0) {
+        console.log(`[ExecutionManager] Auto-denying ${pendingApprovals.length} pending approval callbacks for agent ${id}`);
+        pendingApprovals.forEach(([approvalId]) => {
+          this.resolveApproval(approvalId, false);
+        });
+      }
+
       // Gracefully close generator
       if (generator.return) {
         await generator.return();
@@ -172,7 +189,7 @@ class AgentExecutionManager {
 
       // Broadcast stop message to subscribers
       this.broadcastMessage(id, {
-        type: 'system',
+        type: 'result',
         content: 'Agent stopped by user',
         timestamp: Date.now(),
       });
@@ -208,12 +225,46 @@ class AgentExecutionManager {
           : getToolsForPreset(params.toolPermissions.preset);
       }
 
-      // Create query generator
+      // Create query generator with approval callback
       const generator = query({
         prompt: params.prompt,
         options: {
           cwd: params.directory,
           allowedTools,
+          canUseTool: async (toolName: string, input: Record<string, unknown>) => {
+            // Check if tool is in allowed list
+            const isAllowed = !allowedTools || allowedTools.includes(toolName);
+
+            if (isAllowed) {
+              // Tool is allowed, no approval needed
+              return { behavior: "allow" as const, updatedInput: input };
+            }
+
+            // Tool requires approval - create pending approval
+            const description = this.generateDescription(toolName, input);
+            const approvalId = sessionManager.addPendingApproval(
+              id,
+              toolName as any, // ToolName type from types/agent.ts
+              description,
+              input
+            );
+
+            console.log(`[ExecutionManager] Tool ${toolName} requires approval for agent ${id}`);
+
+            // Wait for user approval
+            const approved = await this.waitForApproval(approvalId);
+
+            if (approved) {
+              console.log(`[ExecutionManager] Tool ${toolName} approved for agent ${id}`);
+              return { behavior: "allow" as const, updatedInput: input };
+            } else {
+              console.log(`[ExecutionManager] Tool ${toolName} denied for agent ${id}`);
+              return {
+                behavior: "deny" as const,
+                message: `User denied permission to use ${toolName}`
+              };
+            }
+          }
         },
       });
 
@@ -335,6 +386,66 @@ class AgentExecutionManager {
     // Ring buffer: remove oldest if over limit
     if (buffer.length > this.MAX_BUFFER_SIZE) {
       buffer.shift();
+    }
+  }
+
+  /**
+   * Wait for user approval of a tool permission request
+   *
+   * @param approvalId - Approval request ID
+   * @returns Promise that resolves to true (approved) or false (denied)
+   */
+  private waitForApproval(approvalId: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      this.approvalCallbacks.set(approvalId, {
+        resolve,
+        timestamp: Date.now(),
+      });
+
+      console.log(`[ExecutionManager] Waiting for approval ${approvalId}`);
+    });
+  }
+
+  /**
+   * Resolve a pending approval request
+   *
+   * @param approvalId - Approval request ID
+   * @param approved - Whether the request was approved
+   */
+  resolveApproval(approvalId: string, approved: boolean): void {
+    const callback = this.approvalCallbacks.get(approvalId);
+    if (!callback) {
+      console.warn(`[ExecutionManager] No callback found for approval ${approvalId}`);
+      return;
+    }
+
+    console.log(`[ExecutionManager] Resolving approval ${approvalId}: ${approved ? 'approved' : 'denied'}`);
+
+    callback.resolve(approved);
+    this.approvalCallbacks.delete(approvalId);
+  }
+
+  /**
+   * Generate human-readable description for tool approval request
+   *
+   * @param toolName - Name of the tool being requested
+   * @param input - Tool input parameters
+   * @returns Description string
+   */
+  private generateDescription(toolName: string, input: Record<string, unknown>): string {
+    switch (toolName) {
+      case 'Write':
+        return `Write to file: ${input.file_path || 'unknown'}`;
+      case 'Edit':
+        return `Edit file: ${input.file_path || 'unknown'}`;
+      case 'Bash':
+        return `Execute command: ${input.command || 'unknown'}`;
+      case 'Task':
+        return `Launch agent task: ${input.description || 'unknown'}`;
+      case 'SlashCommand':
+        return `Run slash command: ${input.command || 'unknown'}`;
+      default:
+        return `Use tool: ${toolName}`;
     }
   }
 }

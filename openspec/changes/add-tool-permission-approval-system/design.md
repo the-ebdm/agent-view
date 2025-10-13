@@ -164,91 +164,150 @@ ActiveAgentsDashboard
 
 ## SDK Integration Strategy
 
-### Current Understanding
+### Current Understanding (CONFIRMED)
 
-The Claude Agent SDK likely provides one of these patterns:
+The Claude Agent SDK provides a `canUseTool` callback mechanism:
 
-1. **Event-based**: SDK emits events that can be subscribed to
-2. **Callback-based**: SDK accepts approval handler function during initialization
-3. **Promise-based**: Tool use returns a promise that can be intercepted
-4. **Middleware pattern**: SDK allows middleware to intercept tool calls
+```typescript
+const result = await query({
+  prompt: "...",
+  options: {
+    canUseTool: async (toolName, input) => {
+      // Custom approval logic
+      return { behavior: "allow", updatedInput: input }
+      // OR
+      return { behavior: "deny", message: "User denied permission" }
+    }
+  }
+});
+```
+
+**Permission Evaluation Order:**
+1. Hooks execute first
+2. Deny rules checked
+3. Permission modes applied
+4. Allow rules checked
+5. `canUseTool` callback invoked (⬅ OUR INTEGRATION POINT)
+
+**Callback Characteristics:**
+- Called for every tool use attempt
+- Receives `toolName` and `input` parameters
+- Returns behavior object with "allow" or "deny"
+- Supports async operations (perfect for waiting on user approval)
+- Can modify input parameters if needed
 
 ### Proposed Integration Approach
 
-**Phase 1: Research** (2-3 hours)
-- Review `@anthropic-ai/claude-agent-sdk` source code or documentation
-- Identify approval mechanism (likely in tool execution layer)
-- Create minimal test case to trigger approval request
-- Document SDK API surface for approvals
+**Phase 1: Implement canUseTool Callback** (2-3 hours)
 
-**Phase 2: Implement Interceptor** (2-3 hours)
+Add the `canUseTool` callback to the agent query options in `agent-execution-manager.ts`:
 
 ```typescript
-// Option A: Event-based (if SDK emits events)
-agentQuery.on('approval_required', (event) => {
-  const approvalId = sessionManager.addPendingApproval(
-    agentId,
-    event.toolName,
-    event.description,
-    event.params
-  );
+// In AgentExecutionManager.runAgent()
+private async runAgent(id: string, params: SpawnParams): Promise<void> {
+  try {
+    // Get allowed tools from permissions
+    let allowedTools: string[] | undefined;
+    if (params.toolPermissions) {
+      allowedTools = params.toolPermissions.preset === 'custom'
+        ? params.toolPermissions.tools
+        : getToolsForPreset(params.toolPermissions.preset);
+    }
 
-  // Store resolver for later use
-  approvalCallbacks.set(approvalId, {
-    agentId,
-    resolve: event.resolve, // SDK provides resolver
+    // Create query generator with approval callback
+    const generator = query({
+      prompt: params.prompt,
+      options: {
+        cwd: params.directory,
+        allowedTools,
+        canUseTool: async (toolName: string, input: Record<string, unknown>) => {
+          // Check if tool is in allowed list
+          const isAllowed = !allowedTools || allowedTools.includes(toolName);
+
+          if (isAllowed) {
+            // Tool is allowed, no approval needed
+            return { behavior: "allow", updatedInput: input };
+          }
+
+          // Tool requires approval - create pending approval
+          const description = this.generateDescription(toolName, input);
+          const approvalId = sessionManager.addPendingApproval(
+            id,
+            toolName as ToolName,
+            description,
+            input
+          );
+
+          console.log(`[ExecutionManager] Tool ${toolName} requires approval for agent ${id}`);
+
+          // Wait for user approval
+          const approved = await this.waitForApproval(approvalId);
+
+          if (approved) {
+            console.log(`[ExecutionManager] Tool ${toolName} approved for agent ${id}`);
+            return { behavior: "allow", updatedInput: input };
+          } else {
+            console.log(`[ExecutionManager] Tool ${toolName} denied for agent ${id}`);
+            return {
+              behavior: "deny",
+              message: `User denied permission to use ${toolName}`
+            };
+          }
+        }
+      },
+    });
+
+    // Rest of execution...
+  }
+}
+
+// Helper method to wait for approval
+private async waitForApproval(approvalId: string): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    this.approvalCallbacks.set(approvalId, {
+      resolve,
+      timestamp: Date.now(),
+    });
   });
-});
+}
 
-// Option B: Callback-based (if SDK accepts handler)
-const agentQuery = query({
-  prompt,
-  options: {
-    cwd: directory,
-    allowedTools,
-    onApprovalRequired: async (toolName, params) => {
-      const approvalId = sessionManager.addPendingApproval(
-        agentId,
-        toolName,
-        `Use ${toolName}`,
-        params
-      );
-
-      // Return promise that resolves when user approves/denies
-      return new Promise((resolve) => {
-        approvalCallbacks.set(approvalId, { agentId, resolve });
-      });
-    }
+// Helper to generate human-readable description
+private generateDescription(toolName: string, input: Record<string, unknown>): string {
+  switch (toolName) {
+    case 'Write':
+      return `Write to ${input.file_path}`;
+    case 'Edit':
+      return `Edit ${input.file_path}`;
+    case 'Bash':
+      return `Run command: ${input.command}`;
+    default:
+      return `Use ${toolName} tool`;
   }
-});
-
-// Option C: Wrapper/Proxy pattern (if no built-in support)
-const originalToolExecutor = sdk.executeTool;
-sdk.executeTool = async (toolName, params) => {
-  if (!isToolAllowed(toolName, agent.permissions)) {
-    const approvalId = sessionManager.addPendingApproval(
-      agentId,
-      toolName,
-      `Use ${toolName}`,
-      params
-    );
-
-    const approved = await waitForApproval(approvalId);
-    if (!approved) {
-      throw new Error('Tool use denied by user');
-    }
-  }
-
-  return originalToolExecutor(toolName, params);
-};
+}
 ```
 
-**Phase 3: Implement Resolution** (1-2 hours)
+**Phase 2: Add Approval Callback Storage** (30 minutes)
+
+Add approval callback tracking to `AgentExecutionManager`:
+
+```typescript
+class AgentExecutionManager {
+  // Existing properties...
+  private approvalCallbacks: Map<string, {
+    resolve: (approved: boolean) => void;
+    timestamp: number;
+  }> = new Map();
+
+  // ... existing methods
+}
+```
+
+**Phase 3: Implement Resolution Methods** (1 hour)
+
+Update `AgentSessionManager` to delegate to `ExecutionManager`:
 
 ```typescript
 class AgentSessionManager {
-  private approvalCallbacks = new Map<string, ApprovalCallback>();
-
   approveRequest(agentId: string, approvalId: string): void {
     const session = this.sessions.get(agentId);
     if (!session || !session.pendingApprovals) {
@@ -262,18 +321,13 @@ class AgentSessionManager {
     }
     session.pendingApprovals.splice(approvalIndex, 1);
 
-    // Resolve SDK callback
-    const callback = this.approvalCallbacks.get(approvalId);
-    if (callback) {
-      callback.resolve(true); // Signal approval
-      this.approvalCallbacks.delete(approvalId);
-    }
+    // Resolve callback in execution manager
+    executionManager.resolveApproval(approvalId, true);
 
     console.log(`[SessionManager] Approved request ${approvalId} for agent ${agentId}`);
   }
 
   denyRequest(agentId: string, approvalId: string): void {
-    // Similar to approveRequest but resolve(false)
     const session = this.sessions.get(agentId);
     if (!session || !session.pendingApprovals) {
       throw new Error('Agent or approval not found');
@@ -285,13 +339,51 @@ class AgentSessionManager {
     }
     session.pendingApprovals.splice(approvalIndex, 1);
 
-    const callback = this.approvalCallbacks.get(approvalId);
-    if (callback) {
-      callback.resolve(false); // Signal denial
-      this.approvalCallbacks.delete(approvalId);
-    }
+    // Resolve callback in execution manager
+    executionManager.resolveApproval(approvalId, false);
 
     console.log(`[SessionManager] Denied request ${approvalId} for agent ${agentId}`);
+  }
+}
+
+class AgentExecutionManager {
+  // ... existing code
+
+  /**
+   * Resolve an approval callback (called by session manager)
+   */
+  resolveApproval(approvalId: string, approved: boolean): void {
+    const callback = this.approvalCallbacks.get(approvalId);
+    if (callback) {
+      callback.resolve(approved);
+      this.approvalCallbacks.delete(approvalId);
+      console.log(`[ExecutionManager] Resolved approval ${approvalId}: ${approved ? 'approved' : 'denied'}`);
+    } else {
+      console.warn(`[ExecutionManager] No callback found for approval ${approvalId}`);
+    }
+  }
+
+  /**
+   * Clean up pending approvals when agent stops
+   */
+  async stopAgent(id: string): Promise<void> {
+    // ... existing stop logic
+
+    // Auto-deny all pending approvals
+    const session = sessionManager.getSession(id);
+    if (session?.pendingApprovals) {
+      session.pendingApprovals.forEach(approval => {
+        const callback = this.approvalCallbacks.get(approval.id);
+        if (callback) {
+          callback.resolve(false); // Auto-deny on stop
+          this.approvalCallbacks.delete(approval.id);
+        }
+      });
+      session.pendingApprovals = [];
+      console.log(`[ExecutionManager] Auto-denied pending approvals for stopped agent ${id}`);
+    }
+
+    // ... rest of existing stop logic
   }
 }
 ```

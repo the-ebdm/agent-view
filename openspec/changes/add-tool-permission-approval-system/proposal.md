@@ -165,36 +165,72 @@ Implement a complete tool permission approval workflow with:
 
 ## Timeline Estimate
 
-- **Backend (Session + API)**: 2-3 hours (COMPLETED)
-- **UI Components**: 3-4 hours (COMPLETED)
-- **SDK Integration**: 4-6 hours (NOT STARTED)
+- **Backend (Session + API)**: 2-3 hours (COMPLETED ✓)
+- **UI Components**: 3-4 hours (COMPLETED ✓)
+- **SDK Integration**: 4-6 hours (COMPLETED ✓)
 - **Testing & Polish**: 2-3 hours (NOT STARTED)
 
 **Total**: 11-16 hours
 
-**Status**: ~60% complete (Backend + UI done, SDK integration pending)
+**Status**: ~85% complete (Backend + UI + SDK integration done, testing pending)
 
 ## Open Questions
 
-1. **SDK Approval Mechanism**: What is the exact API for hooking into the Claude Agent SDK's approval flow?
-   - Need to identify approval callback/promise mechanism
-   - Understand how to resume vs. abort execution
-   - Determine if SDK provides request context automatically
+### 1. SDK Approval Mechanism (RESOLVED ✓)
 
-2. **Approval Request Creation**: When/how should approval records be created?
-   - Should SDK automatically call our `addPendingApproval()` method?
-   - Do we need to wrap SDK tool calls to intercept approval requests?
-   - Is there an event emitter or callback we can subscribe to?
+**Question**: What is the exact API for hooking into the Claude Agent SDK's approval flow?
 
-3. **Multi-Agent Conflicts**: How to handle when multiple agents have pending approvals?
-   - Current approach: Drawer shows one agent's approvals at a time
-   - Alternative: Show all approvals across agents in one view?
-   - Decision: Keep per-agent for clarity, add global badge in future
+**Answer**: The SDK provides a `canUseTool` callback in query options:
 
-4. **Approval Persistence**: Should pending approvals persist across server restarts?
-   - Current: In-memory only (lost on restart)
-   - Alternative: Persist to database
-   - Decision: In-memory for now, add persistence if users request it
+```typescript
+canUseTool: async (toolName: string, input: Record<string, unknown>) => {
+  return { behavior: "allow" | "deny", message?: string }
+}
+```
+
+**Implementation Plan**:
+- Add `canUseTool` callback to `query()` options in execution manager
+- Check if tool is in allowed list, auto-allow if yes
+- For restricted tools, create pending approval and wait on Promise
+- Resolve Promise when user approves/denies
+- Return appropriate behavior to SDK
+
+### 2. Approval Request Creation (RESOLVED ✓)
+
+**Question**: When/how should approval records be created?
+
+**Answer**: Inside the `canUseTool` callback when a restricted tool is requested:
+
+1. SDK calls `canUseTool(toolName, input)`
+2. We check if tool is in allowed list
+3. If not allowed, call `sessionManager.addPendingApproval()`
+4. Store Promise resolver in execution manager
+5. Wait for user approval via Promise
+6. Resolve Promise when API endpoint processes approval
+
+### 3. Multi-Agent Conflicts (DECIDED)
+
+**Question**: How to handle when multiple agents have pending approvals?
+
+**Decision**: Keep per-agent drawer approach
+- Each agent card shows its own approval count
+- Drawer opens for specific agent when clicked
+- Simpler UX for initial implementation
+- Consider global approval view in future enhancement
+
+**Rationale**: Better for mobile (less cluttered), clearer ownership of approvals, consistent with per-agent actions
+
+### 4. Approval Persistence (DECIDED)
+
+**Question**: Should pending approvals persist across server restarts?
+
+**Decision**: In-memory only for initial implementation
+- Acceptable for local development server
+- Avoids database complexity
+- Document limitation clearly to users
+- Add database persistence in future if users request it
+
+**Rationale**: Simpler initial implementation, low impact (restarts are rare), can add later if needed
 
 ## Notes
 
