@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getProjectsRepository } from '@/lib/database/repositories/projects';
 import { isPersistenceEnabled } from '@/lib/database';
-import { discoverAndReconcileProject } from '@/lib/services/project-discovery';
+import { discoverProject } from '@/lib/services/project-discovery';
 
 /**
  * GET /api/projects
@@ -56,9 +56,9 @@ export async function POST(request: Request) {
     }
 
     // Use the project discovery service to add the project
-    const project = await discoverAndReconcileProject(directory);
+    const result = await discoverProject(directory);
 
-    if (!project) {
+    if (!result || !result.project) {
       return NextResponse.json(
         { error: 'Failed to add project - directory may not exist or be invalid' },
         { status: 400 }
@@ -66,7 +66,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      project,
+      project: result.project,
+      worktree: result.worktree,
       message: 'Project added successfully',
     }, { status: 201 });
   } catch (error) {
