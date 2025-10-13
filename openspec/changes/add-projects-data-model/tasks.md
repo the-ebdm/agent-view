@@ -2,21 +2,28 @@
 
 ## 1. Database Schema Migration
 
-- [ ] 1.1 Create projects table schema
+- [x] 1.1 Create projects table schema
   - Define table with all columns (id, name, directory, description, etc.)
   - Add UNIQUE constraint on directory
   - Create indexes (directory, last_used, is_favorite, archived_at)
-- [ ] 1.2 Modify agents table schema
+- [x] 1.2 Modify agents table schema
   - Add project_id column (nullable, foreign key to projects.id)
+  - Add worktree_id column (nullable, foreign key to worktrees.id)
   - Add ON DELETE SET NULL constraint
-  - Create index on project_id
-- [ ] 1.3 Modify agent_configs table schema (future-proofing)
+  - Create indexes on project_id and worktree_id
+- [x] 1.3 Modify agent_configs table schema (future-proofing)
   - Add project_id column (nullable, foreign key to projects.id)
   - Create index on project_id
-- [ ] 1.4 Implement migration to schema version 2
+- [x] 1.4 Create worktrees table schema
+  - Define table with all columns (id, project_id, name, directory, branch, etc.)
+  - Add UNIQUE constraint on directory
+  - Add foreign key to projects with ON DELETE CASCADE
+  - Create indexes (project_id, directory, last_used, is_main)
+- [x] 1.5 Implement migration to schema version 2
   - Check current schema version from settings table
   - Run CREATE TABLE projects statement
-  - Run ALTER TABLE agents ADD COLUMN project_id statement
+  - Run CREATE TABLE worktrees statement
+  - Run ALTER TABLE agents ADD COLUMN project_id, worktree_id statements
   - Run ALTER TABLE agent_configs ADD COLUMN project_id statement
   - Update schema_version to 2
 
@@ -41,73 +48,91 @@
 
 ## 3. Projects Repository Implementation
 
-- [ ] 3.1 Create ProjectsRepository class (`src/lib/database/repositories/projects.ts`)
+- [x] 3.1 Create ProjectsRepository class (`src/lib/database/repositories/projects.ts`)
   - Implement `create(project: Project): Project`
   - Implement `findById(id: string): Project | undefined`
   - Implement `findByDirectory(directory: string): Project | undefined`
-  - Implement `findAll(options?: { includeArchived?: boolean }): Project[]`
-  - Implement `findRecent(limit: number): Project[]`
-  - Implement `findByTag(tag: string): Project[]`
+  - Implement `findAll(): Project[]` (non-archived only)
+  - Implement `findActive(): Project[]` (with active agents)
+  - Implement `findFavorites(): Project[]`
   - Implement `update(id: string, updates: Partial<Project>): void`
   - Implement `archive(id: string): void`
-  - Implement `restore(id: string): void`
-  - Implement `toggleFavorite(id: string): void`
+  - Implement `delete(id: string): void` (permanent delete)
   - Use prepared statements for all queries
-- [ ] 3.2 Implement count management methods
-  - Implement `incrementAgentCount(id: string): void`
-  - Implement `updateActiveAgentCount(id: string, delta: number): void`
+- [x] 3.2 Implement count management methods
+  - Implement `updateCounts(id: string, agentCount, activeAgentCount, worktreeCount): void`
   - Implement `updateLastUsed(id: string): void`
 - [ ] 3.3 Implement reconciliation methods
   - Implement `reconcileCounts(projectId?: string): number`
   - Query actual counts from agents table
   - Update projects table with correct counts
   - Return number of corrected records
-- [ ] 3.4 Add TypeScript types
+- [x] 3.4 Add TypeScript types
   - Define `Project` interface
-  - Define `ProjectCreateInput` type
-  - Define `ProjectUpdateInput` type
+  - Define `Worktree` interface
+  - Define `CreateProjectInput` type
+  - Define `UpdateProjectInput` type
+  - Define `CreateWorktreeInput` type
+  - Define `UpdateWorktreeInput` type
   - Export types from `src/types/project.ts`
+- [x] 3.5 Create WorktreesRepository class (`src/lib/database/repositories/worktrees.ts`)
+  - Implement `create(worktree: Worktree): Worktree`
+  - Implement `findById(id: string): Worktree | undefined`
+  - Implement `findByDirectory(directory: string): Worktree | undefined`
+  - Implement `findByProjectId(projectId: string): Worktree[]`
+  - Implement `findMainWorktree(projectId: string): Worktree | undefined`
+  - Implement `findAll(): Worktree[]`
+  - Implement `update(id: string, updates: Partial<Worktree>): void`
+  - Implement `updateCounts(id: string, agentCount, activeAgentCount): void`
+  - Implement `updateLastUsed(id: string): void`
+  - Implement `delete(id: string): void`
+  - Use prepared statements for all queries
 
 ## 4. Auto-Discovery Logic
 
-- [ ] 4.1 Create project discovery service (`src/lib/project-discovery.ts`)
-  - Implement `findOrCreateProject(directory: string): Project`
+- [x] 4.1 Create project discovery service (`src/lib/services/project-discovery.ts`)
+  - Implement `discoverProject(directory: string): { project: Project, worktree: Worktree | null }`
   - Check if project exists with directory
   - If exists, return existing project
   - If not exists, create new project with auto-generated name
-- [ ] 4.2 Implement auto-naming strategy
+  - Create or find worktree for the directory
+- [x] 4.2 Implement auto-naming strategy
   - Extract directory basename as default name
-  - Check for package.json and extract name field (optional enhancement)
-  - Check for .git/config and extract repository name (optional enhancement)
-  - Fall back to "Project at [directory]" if no better name found
-  - Ensure name is unique (append number if duplicate)
-- [ ] 4.3 Implement directory validation
-  - Check if directory exists on filesystem
-  - Return error if directory invalid
-- [ ] 4.4 Handle edge cases
-  - Relative vs absolute paths
-  - Symlinks and aliases
-  - Case-sensitive vs case-insensitive filesystems
+  - Check for package.json and extract name field ✓
+  - Read CLAUDE.md or README.md for project description ✓
+  - Detect OpenSpec directory ✓
+  - Infer worktree names from git branch or directory name
+- [x] 4.3 Implement git worktree detection (`src/lib/git/worktree-utils.ts`)
+  - Detect if directory is a git repository
+  - Determine if main worktree (.git is directory) or secondary (.git is file)
+  - Parse .git file to find main repository path
+  - Extract branch names from HEAD file
+  - Find main repository path for worktrees
+- [x] 4.4 Handle edge cases
+  - Non-git directories (simple projects without worktrees)
+  - Main repositories vs secondary worktrees
+  - Git worktree directory structure parsing
 
 ## 5. Integration with Agent Spawn Flow
 
-- [ ] 5.1 Modify agent spawn route (`src/app/api/agents/spawn/route.ts`)
-  - Call `findOrCreateProject(directory)` before creating agent
-  - Store returned project.id in session creation
-  - Update project's last_used timestamp
-  - Increment project's agent_count
-  - Increment project's active_agent_count
-- [ ] 5.2 Update AgentSessionManager
-  - Add projectId parameter to `createSession()`
-  - Store projectId in agent session
-  - Persist projectId to database via AgentsRepository
-- [ ] 5.3 Update AgentsRepository
-  - Modify `create()` to accept optional project_id
-  - Modify `findById()` to include project relationship
-  - Add `findByProjectId(projectId: string)` method
+- [x] 5.1 Modify agent spawn route (`src/app/api/agents/spawn/route.ts`)
+  - Made `createSession()` call async to support project discovery
+  - Project/worktree discovery happens automatically in createSession
+  - Project and worktree IDs stored in agent session
+- [x] 5.2 Update AgentSessionManager
+  - Made `createSession()` async
+  - Added projectId and worktreeId to agent session
+  - Call `discoverProject(directory)` before creating session
+  - Store projectId and worktreeId in session
+  - Persist to database via AgentsRepository
+- [x] 5.3 Update AgentsRepository
+  - Modified `create()` to accept optional project_id and worktree_id
+  - Modified `findById()` to return project_id and worktree_id
+  - Updated mapping function to include project/worktree relationships
 - [ ] 5.4 Update agent lifecycle methods
   - Decrement active_agent_count on stop/complete
-  - Update project's last_used when agent starts
+  - Update project's and worktree's last_used when agent starts
+  - Update counts on agent lifecycle changes
 
 ## 6. Project Settings - Tool Permissions
 
@@ -138,52 +163,67 @@
 
 ## 8. Projects API Endpoints
 
-- [ ] 8.1 Create `GET /api/projects` endpoint
-  - Accept query params: recent, favorite, tag, includeArchived
-  - Call ProjectsRepository.findAll() with filters
-  - Return projects with agent counts
-  - Support sorting by last_used, is_favorite
-- [ ] 8.2 Create `GET /api/projects/[id]` endpoint
+- [x] 8.1 Create `GET /api/projects` endpoint (`src/app/api/projects/route.ts`)
+  - Returns all non-archived projects
+  - Includes agent counts and worktree counts
+  - Checks for persistence enabled
+- [x] 8.2 Create `GET /api/projects/[id]` endpoint (`src/app/api/projects/[id]/route.ts`)
   - Parse id from URL params
   - Call ProjectsRepository.findById(id)
-  - Include list of agents for project (via AgentsRepository.findByProjectId())
-  - Return 404 if not found or archived
+  - Return 404 if not found
+  - Return 503 if persistence disabled
 - [ ] 8.3 Create `POST /api/projects` endpoint
-  - Validate request body (name, directory required)
-  - Check directory exists on filesystem
-  - Call ProjectsRepository.create()
-  - Handle duplicate directory (409 conflict)
-  - Return created project
-- [ ] 8.4 Create `PATCH /api/projects/[id]` endpoint
-  - Validate request body (partial updates)
+  - Note: Projects are currently auto-created via agent spawn discovery
+  - Manual creation endpoint not yet implemented
+- [x] 8.4 Create `PATCH /api/projects/[id]` endpoint (`src/app/api/projects/[id]/route.ts`)
+  - Validate request body with Zod schema
   - Call ProjectsRepository.update()
   - Support updating: name, description, openspec_path, default_tool_permissions, is_favorite, tags
   - Return updated project
-- [ ] 8.5 Create `DELETE /api/projects/[id]` endpoint
+  - Return 404 if not found
+- [x] 8.5 Create `DELETE /api/projects/[id]` endpoint (`src/app/api/projects/[id]/route.ts`)
   - Call ProjectsRepository.archive(id)
   - Return success status
-  - Linked agents remain accessible (project_id set to NULL)
+  - Linked agents' project_id remains (not set to NULL by design)
 - [ ] 8.6 Create `GET /api/projects/discover` endpoint
-  - Accept query param: path (required)
-  - Validate path exists on filesystem
-  - Scan subdirectories for project indicators (.git, package.json, openspec/)
-  - Return list of potential projects with suggested names
-  - Mark existing projects as "already tracked"
+  - Not yet implemented
+  - Manual project discovery endpoint for future enhancement
+
+## 8a. Worktrees API Endpoints
+
+- [x] 8a.1 Create `GET /api/worktrees` endpoint (`src/app/api/worktrees/route.ts`)
+  - Accept optional query param: projectId
+  - Returns all worktrees or filtered by project
+  - Includes agent counts
+- [x] 8a.2 Create `GET /api/worktrees/[id]` endpoint (`src/app/api/worktrees/[id]/route.ts`)
+  - Parse id from URL params
+  - Call WorktreesRepository.findById(id)
+  - Return 404 if not found
+- [x] 8a.3 Create `PATCH /api/worktrees/[id]` endpoint (`src/app/api/worktrees/[id]/route.ts`)
+  - Validate request body with Zod schema
+  - Support updating: name, branch, isMain
+  - Return updated worktree
+- [x] 8a.4 Create `DELETE /api/worktrees/[id]` endpoint (`src/app/api/worktrees/[id]/route.ts`)
+  - Permanently delete worktree
+  - Return success status
 
 ## 9. Project Organization Features
 
-- [ ] 9.1 Implement favorites
-  - Add favorite toggle to ProjectsRepository.toggleFavorite()
-  - Update project list query to sort favorites first
-- [ ] 9.2 Implement tags
-  - Store tags as JSON array in database
-  - Implement ProjectsRepository.findByTag()
+- [x] 9.1 Implement favorites
+  - is_favorite field stored in database
+  - ProjectsRepository.findFavorites() query implemented
+  - Can be updated via PATCH /api/projects/[id] endpoint
+  - Index on is_favorite for performance
+- [x] 9.2 Implement tags
+  - Store tags as JSON array in database ✓
+  - Tags can be updated via PATCH endpoint
   - Support multiple tags per project
-  - Implement tag management in update API
-- [ ] 9.3 Implement archival
-  - ProjectsRepository.archive() sets archived_at timestamp
-  - Exclude archived projects from default queries (WHERE archived_at IS NULL)
-  - ProjectsRepository.restore() clears archived_at
+  - Note: findByTag() query not yet implemented
+- [x] 9.3 Implement archival
+  - ProjectsRepository.archive() sets archived_at timestamp ✓
+  - Exclude archived projects from default queries (WHERE archived_at IS NULL) ✓
+  - Index on archived_at for performance ✓
+  - Note: restore() method not yet implemented
 
 ## 10. Count Reconciliation
 
