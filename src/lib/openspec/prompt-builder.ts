@@ -114,14 +114,47 @@ export function buildReviewChangePrompt(
   context: OpenSpecChangeContext,
   projectDirectory?: string
 ): string {
-  let prompt = `Review the OpenSpec change proposal: ${context.changeId}
+  const {
+    changeId,
+    name,
+    status,
+    validationStatus,
+    validationErrors,
+    tasksCompleted,
+    tasksTotal
+  } = context;
 
-**Change: ${context.name}**
+  let prompt = `Review the OpenSpec change proposal: ${changeId}
+
+**Change: ${name}**
 
 `;
 
   if (projectDirectory) {
     prompt += `**Working Directory:** ${projectDirectory}\n`;
+  }
+
+  if (status) {
+    prompt += `**Current Status:** ${status}\n`;
+  }
+
+  if (validationStatus) {
+    prompt += `**Validation Status:** ${validationStatus}\n`;
+  }
+
+  if (validationErrors && validationErrors.length > 0) {
+    prompt += `\n**⚠️ Validation Errors:**\n`;
+    validationErrors.forEach(error => {
+      prompt += `- [${error.severity}] ${error.message}\n`;
+    });
+    prompt += '\nPlease address these validation errors before proceeding.\n';
+  }
+
+  if (tasksCompleted && tasksTotal) {
+    prompt += `\n**Progress:** ${tasksCompleted}/${tasksTotal} tasks completed (${Math.round((tasksCompleted / tasksTotal) * 100)}%)\n`;
+    if (tasksCompleted > 0 && tasksCompleted < tasksTotal) {
+      prompt += `\n⚠️ **Note:** This change is partially implemented. Review completed tasks before continuing.\n`;
+    }
   }
 
   prompt += `
@@ -135,9 +168,11 @@ export function buildReviewChangePrompt(
 1. Review \`openspec/project.md\`, run \`openspec list\` and \`openspec list --specs\`, and inspect related code or docs (e.g., via \`rg\`/\`ls\`) to ground the proposal in current behaviour; note any gaps that require clarification.
 2. Review \`openspec/changes/<id>/proposal.md\`, \`design.md\` (if present), and \`tasks.md\` to confirm scope and acceptance criteria.
 3. Validate with \`openspec validate <id> --strict\` and resolve every issue before sharing the proposal.
+3a. If the validation fails, provide feedback on the proposed changes and ask the necessary follow-up questions.
 4. Check for the existence of any files mentioned by the tasks.md and review the implementation.
 5. Update tasks.md to reflect the progress of the change.
 6. Provide feedback on the proposed changes and ask the necessary follow-up questions.
+7. If all the tasks are complete, update the status to completed.
 
 Your job is to review the proposal and provide feedback on the proposed changes not to complete the tasks.
 `;
