@@ -22,8 +22,22 @@ export function AgentInteractionModal({
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [isInputCollapsed, setIsInputCollapsed] = useState(false);
+  const [isInputCollapsed, setIsInputCollapsed] = useState(() => {
+    // Load from localStorage on mount
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('agent-input-collapsed');
+      return saved === 'true';
+    }
+    return false;
+  });
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Save to localStorage when state changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('agent-input-collapsed', isInputCollapsed.toString());
+    }
+  }, [isInputCollapsed]);
 
   // Close on escape key
   useEffect(() => {
