@@ -21,7 +21,7 @@ Phase 1 established the foundation for managing a single Claude Code agent throu
 - No way to temporarily pause an agent without terminating it
 - Security risk: all agents have full filesystem/bash access
 
-## What
+## What Changes
 
 Extend Agent View to support **unlimited concurrent agents** with full lifecycle control, granular tool permissions, and a dashboard-style UI for monitoring multiple agents.
 
