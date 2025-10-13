@@ -17,8 +17,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'spec' | 'change' | 'archive' | null
     const useCache = searchParams.get('cache') !== 'false';
+    const directory = searchParams.get('directory'); // Project directory to scan
 
-    // Check cache
+    // Check cache (cache key includes directory)
+    const cacheKey = directory || 'default';
     const now = Date.now();
     if (useCache && cachedData && now - cacheTime < CACHE_TTL) {
       return NextResponse.json(filterByType(cachedData, type));
@@ -26,9 +28,9 @@ export async function GET(request: NextRequest) {
 
     // Fetch all entities in parallel
     const [specs, changes, archives] = await Promise.all([
-      listSpecs(),
-      listChanges(),
-      listArchives(),
+      listSpecs(directory || undefined),
+      listChanges(directory || undefined),
+      listArchives(directory || undefined),
     ]);
 
     const data: ListEntitiesResponse = {

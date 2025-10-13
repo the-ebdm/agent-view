@@ -18,12 +18,13 @@ const MAX_TIMEOUT = 10000;
  */
 async function executeOpenSpecCommand(
   command: string,
-  timeout: number = DEFAULT_TIMEOUT
+  timeout: number = DEFAULT_TIMEOUT,
+  cwd?: string
 ): Promise<CLIResult> {
   try {
     const { stdout, stderr } = await execAsync(command, {
       timeout: Math.min(timeout, MAX_TIMEOUT),
-      cwd: process.cwd(),
+      cwd: cwd || process.cwd(),
       encoding: 'utf-8',
     });
 
@@ -46,8 +47,8 @@ async function executeOpenSpecCommand(
 /**
  * List all capability specs in openspec/specs/
  */
-export async function listSpecs(): Promise<CapabilitySpec[]> {
-  const result = await executeOpenSpecCommand('openspec list --specs');
+export async function listSpecs(cwd?: string): Promise<CapabilitySpec[]> {
+  const result = await executeOpenSpecCommand('openspec list --specs', DEFAULT_TIMEOUT, cwd);
 
   if (!result.success) {
     console.error('Failed to list specs:', result.stderr);
@@ -80,8 +81,8 @@ export async function listSpecs(): Promise<CapabilitySpec[]> {
 /**
  * List all active changes in openspec/changes/
  */
-export async function listChanges(): Promise<ChangeProposal[]> {
-  const result = await executeOpenSpecCommand('openspec list');
+export async function listChanges(cwd?: string): Promise<ChangeProposal[]> {
+  const result = await executeOpenSpecCommand('openspec list', DEFAULT_TIMEOUT, cwd);
 
   if (!result.success) {
     console.error('Failed to list changes:', result.stderr);
@@ -140,12 +141,13 @@ export async function listChanges(): Promise<ChangeProposal[]> {
 /**
  * List all archived changes in openspec/changes/archive/
  */
-export async function listArchives(): Promise<ArchivedChange[]> {
+export async function listArchives(cwd?: string): Promise<ArchivedChange[]> {
   // OpenSpec CLI doesn't have --archived flag, use fs to read archive directory
   try {
     const fs = require('fs');
     const path = require('path');
-    const archivePath = path.join(process.cwd(), 'openspec', 'changes', 'archive');
+    const baseDir = cwd || process.cwd();
+    const archivePath = path.join(baseDir, 'openspec', 'changes', 'archive');
 
     if (!fs.existsSync(archivePath)) {
       return [];

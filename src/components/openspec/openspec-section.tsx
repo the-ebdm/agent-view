@@ -39,7 +39,14 @@ export function OpenSpecSection({ projectDirectory, openspecPath }: OpenSpecSect
     setError(null);
 
     try {
-      const response = await fetch('/api/openspec/list');
+      // Build query params
+      const params = new URLSearchParams();
+      if (projectDirectory) {
+        params.set('directory', projectDirectory);
+      }
+
+      const url = `/api/openspec/list${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch OpenSpec entities');
 
       const data = await response.json();
@@ -51,7 +58,7 @@ export function OpenSpecSection({ projectDirectory, openspecPath }: OpenSpecSect
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [projectDirectory]);
 
   useEffect(() => {
     fetchEntities();

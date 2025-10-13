@@ -4,16 +4,19 @@
  */
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { ProjectsDashboard } from '@/components/features/projects-dashboard';
 import { HelpModal } from '@/components/features/help-modal';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function Home() {
   const [showHelp, setShowHelp] = useState(false);
   const [isAddingProject, setIsAddingProject] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAddProjectForm, setShowAddProjectForm] = useState(false);
+  const [directoryPath, setDirectoryPath] = useState('');
+  const [addProjectError, setAddProjectError] = useState('');
 
   // Keyboard shortcuts
   useKeyboardShortcuts([
@@ -21,7 +24,7 @@ export default function Home() {
       key: 'n',
       meta: true,
       description: 'Add new project',
-      action: () => fileInputRef.current?.click(),
+      action: () => setShowAddProjectForm(true),
     },
     {
       key: 'h',
@@ -34,54 +37,43 @@ export default function Home() {
       description: 'Close modals',
       action: () => {
         setShowHelp(false);
+        setShowAddProjectForm(false);
+        setAddProjectError('');
       },
     },
   ]);
 
-  const handleAddProject = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    // Get the directory path from the first file
-    const file = files[0];
-    const path = file.webkitRelativePath || file.name;
-    const directory = path.split('/')[0];
-
-    // In a real implementation, we'd need the full path
-    // For now, we'll use a workaround by getting it from the file path
-    const fullPath = (file as any).path;
-
-    if (!fullPath) {
-      alert('Unable to get directory path. Please try again.');
+  const handleAddProject = async () => {
+    if (!directoryPath.trim()) {
+      setAddProjectError('Please enter a directory path');
       return;
     }
 
-    // Extract directory path (remove filename if present)
-    const dirPath = fullPath.substring(0, fullPath.lastIndexOf('/'));
-
     setIsAddingProject(true);
+    setAddProjectError('');
+
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ directory: dirPath }),
+        body: JSON.stringify({ directory: directoryPath.trim() }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to add project');
+        throw new Error(data.error || 'Failed to add project');
       }
 
-      // Refresh the page to show the new project
+      // Reset form and refresh the page to show the new project
+      setDirectoryPath('');
+      setShowAddProjectForm(false);
       window.location.reload();
     } catch (error) {
       console.error('Error adding project:', error);
-      alert('Failed to add project. Please try again.');
+      setAddProjectError(error instanceof Error ? error.message : 'Failed to add project. Please try again.');
     } finally {
       setIsAddingProject(false);
-      // Reset the input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -104,21 +96,9 @@ export default function Home() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
-            {/* Hidden file input for directory selection */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              /* @ts-ignore - webkitdirectory is not in TypeScript types */
-              webkitdirectory=""
-              directory=""
-              multiple
-              onChange={handleAddProject}
-              className="hidden"
-            />
-
             {/* Add Project Button */}
             <Button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => setShowAddProjectForm(!showAddProjectForm)}
               size="sm"
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
               title="Add Project (⌘N)"
@@ -151,6 +131,57 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Add Project Form (shown below header when active) */}
+      {showAddProjectForm && (
+        <div className="max-w-7xl mx-auto mt-4 px-4 sm:px-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+            <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+              Add Project Directory
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1">
+                <Input
+                  type="text"
+                  placeholder="/path/to/your/project"
+                  value={directoryPath}
+                  onChange={(e) => setDirectoryPath(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddProject();
+                    }
+                  }}
+                  disabled={isAddingProject}
+                  error={addProjectError}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAddProject}
+                  disabled={isAddingProject || !directoryPath.trim()}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Add
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowAddProjectForm(false);
+                    setDirectoryPath('');
+                    setAddProjectError('');
+                  }}
+                  variant="outline"
+                  disabled={isAddingProject}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Enter the full path to a project directory on your filesystem
+            </p>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Page Title */}
         <div className="mb-8">
@@ -172,8 +203,9 @@ export default function Home() {
                 Getting Started
               </h4>
               <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                <li>• Click <kbd className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">+ Add Project</kbd> or press <kbd className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">⌘N</kbd> to add a project directory</li>
-                <li>• Projects are automatically discovered from the filesystem</li>
+                <li>• Click <kbd className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">+ Add Project</kbd> or press <kbd className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">⌘N</kbd> to add a project directory path</li>
+                <li>• Enter the full path to your project directory (e.g., <code className="px-1 py-0.5 bg-white dark:bg-gray-700 rounded text-xs">/Users/yourname/Projects/myproject</code>)</li>
+                <li>• Projects are automatically discovered and tracked in the database</li>
                 <li>• Each project tracks its agents, worktrees, and OpenSpec configurations</li>
                 <li>• Click any project card to view its details and spawn agents</li>
               </ul>
