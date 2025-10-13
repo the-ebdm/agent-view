@@ -30,13 +30,10 @@ export function buildApplyChangePrompt(
     validationStatus,
     validationErrors,
     tasksCompleted,
-    tasksTotal,
-    proposalContent,
-    designContent,
-    tasksContent,
+    tasksTotal
   } = context;
 
-  let prompt = `Use /openspec:apply to implement the approved proposal: ${changeId}
+  let prompt = `Implement the approved OpenSpec change: ${changeId}
 
 **Change: ${name}**
 
@@ -70,51 +67,27 @@ export function buildApplyChangePrompt(
 
   prompt += `\n---
 
-## Implementation Plan
+**Guardrails**
+- Favor straightforward, minimal implementations first and add complexity only when it is requested or clearly required.
+- Keep changes tightly scoped to the requested outcome.
+- Refer to \`openspec/AGENTS.md\` (located inside the \`openspec/\` directory—run \`ls openspec\` or \`openspec update\` if you don't see it) if you need additional OpenSpec conventions or clarifications.
 
-The agent will:
-1. Read the approved proposal specification from openspec/changes/${changeId}/
-2. Review the design document (design.md) for implementation details
-3. Follow the task checklist (tasks.md) systematically
-4. Implement changes according to the documented plan
-5. Run tests and validation after each major step
-6. Update task completion status as you progress
-7. Keep the spec synced with actual implementation
+**Steps**
+Track these steps as TODOs and complete them one by one.
+1. Read \`changes/${changeId}/proposal.md\`, \`design.md\` (if present), and \`tasks.md\` to confirm scope and acceptance criteria.
+2. Work through tasks sequentially, keeping edits minimal and focused on the requested change.
+3. Confirm completion before updating statuses—make sure every item in \`tasks.md\` is finished.
+4. Update the checklist after all work is done so each task is marked \`- [x]\` and reflects reality.
+5. Reference \`openspec list\` or \`openspec show <item>\` when additional context is required.
+
+**Reference**
+- Use \`openspec show ${changeId} --json --deltas-only\` if you need additional context from the proposal while implementing.
 
 `;
 
   // Add directory context
   if (projectDirectory) {
     prompt += `**Working Directory:** ${projectDirectory}\n`;
-  }
-
-  // Add content previews if available
-  if (proposalContent) {
-    prompt += `\n## Proposal Summary\n\n`;
-    // Include first few lines of proposal for context
-    const lines = proposalContent.split('\n').slice(0, 15);
-    prompt += lines.join('\n');
-    if (proposalContent.split('\n').length > 15) {
-      prompt += '\n\n[...more content in full proposal file...]';
-    }
-    prompt += '\n';
-  }
-
-  if (designContent) {
-    prompt += `\n## Design Overview\n\n`;
-    const lines = designContent.split('\n').slice(0, 15);
-    prompt += lines.join('\n');
-    if (designContent.split('\n').length > 15) {
-      prompt += '\n\n[...more content in full design file...]';
-    }
-    prompt += '\n';
-  }
-
-  if (tasksContent) {
-    prompt += `\n## Task Checklist\n\n`;
-    // Include all tasks for visibility
-    prompt += tasksContent;
-    prompt += '\n';
   }
 
   prompt += `\n---
@@ -140,58 +113,39 @@ export function buildProposalPrompt(
   description: string,
   projectDirectory?: string
 ): string {
-  let prompt = `Use /openspec:proposal to create a new change proposal.
+  let prompt = `Create a new OpenSpec change proposal.
 
 **Change Description:**
 ${description}
 
----
-
-## Proposal Creation Process
-
-The agent will guide you through creating a structured OpenSpec change proposal:
-
-1. **Generate Proposal ID**
-   - Create a kebab-case ID from the description (e.g., "add-new-feature")
-   - Ensure the ID is unique in the openspec/changes/ directory
-
-2. **Create Proposal Structure**
-   - Create openspec/changes/[id]/ directory
-   - Generate proposal.md with:
-     - Problem statement
-     - Proposed solution
-     - Benefits and rationale
-   - Generate design.md with:
-     - Technical approach
-     - Architecture changes
-     - API/interface changes
-     - Migration considerations
-   - Generate tasks.md with:
-     - Numbered checklist of implementation tasks
-     - Clear, actionable items
-
-3. **Validate Proposal**
-   - Run openspec validate [id] to check schema compliance
-   - Fix any validation errors
-
-4. **Prepare for Review**
-   - Display summary of created files
-   - Suggest next steps (review, approval)
-
 `;
 
   if (projectDirectory) {
-    prompt += `**Working Directory:** ${projectDirectory}\n\n`;
+    prompt += `**Working Directory:** ${projectDirectory}\n`;
   }
 
-  prompt += `**Guidelines:**
-- Keep the proposal focused and clear
-- Include concrete examples where helpful
-- Break down complex changes into reviewable chunks
-- Document assumptions and dependencies
-- Consider backwards compatibility
+  prompt += `
+---
 
-This ensures changes are properly documented and trackable from inception to completion.
+**Guardrails**
+- Favor straightforward, minimal implementations first and add complexity only when it is requested or clearly required.
+- Keep changes tightly scoped to the requested outcome.
+- Refer to \`openspec/AGENTS.md\` (located inside the \`openspec/\` directory—run \`ls openspec\` or \`openspec update\` if you don't see it) if you need additional OpenSpec conventions or clarifications.
+- Identify any vague or ambiguous details and ask the necessary follow-up questions before editing files.
+
+**Steps**
+1. Review \`openspec/project.md\`, run \`openspec list\` and \`openspec list --specs\`, and inspect related code or docs (e.g., via \`rg\`/\`ls\`) to ground the proposal in current behaviour; note any gaps that require clarification.
+2. Choose a unique verb-led \`change-id\` and scaffold \`proposal.md\`, \`tasks.md\`, and \`design.md\` (when needed) under \`openspec/changes/<id>/\`.
+3. Map the change into concrete capabilities or requirements, breaking multi-scope efforts into distinct spec deltas with clear relationships and sequencing.
+4. Capture architectural reasoning in \`design.md\` when the solution spans multiple systems, introduces new patterns, or demands trade-off discussion before committing to specs.
+5. Draft spec deltas in \`changes/<id>/specs/<capability>/spec.md\` (one folder per capability) using \`## ADDED|MODIFIED|REMOVED Requirements\` with at least one \`#### Scenario:\` per requirement and cross-reference related capabilities when relevant.
+6. Draft \`tasks.md\` as an ordered list of small, verifiable work items that deliver user-visible progress, include validation (tests, tooling), and highlight dependencies or parallelizable work.
+7. Validate with \`openspec validate <id> --strict\` and resolve every issue before sharing the proposal.
+
+**Reference**
+- Use \`openspec show <id> --json --deltas-only\` or \`openspec show <spec> --type spec\` to inspect details when validation fails.
+- Search existing requirements with \`rg -n "Requirement:|Scenario:" openspec/specs\` before writing new ones.
+- Explore the codebase with \`rg <keyword>\`, \`ls\`, or direct file reads so proposals align with current implementation realities.
 `;
 
   return prompt;
@@ -210,54 +164,32 @@ export function buildArchivePrompt(
   if (skipSpecs) flags += ' --skip-specs';
   if (autoYes) flags += ' --yes';
 
-  let prompt = `Use /openspec:archive${flags} to archive the completed change: ${changeId}
+  let prompt = `Archive the completed OpenSpec change: ${changeId}
 
----
-
-## Archival Process
-
-The agent will systematically archive the completed change:
-
-1. **Pre-Archive Verification**
-   - Confirm the change exists in openspec/changes/${changeId}/
-   - Verify all tasks are marked as completed in tasks.md
-   - Check that implementation matches the design specification
-   - Ensure no open issues or blockers remain
-
-2. **Archive Change Files**
-   - Move openspec/changes/${changeId}/ → openspec/archive/${changeId}/
-   - Preserve all proposal, design, and task documentation
-   - Maintain metadata and validation status
-
-3. **Update Specifications** ${skipSpecs ? '(SKIPPED via --skip-specs)' : ''}${skipSpecs ? '' : `
-   - Review related spec files in openspec/specs/
-   - Update specs to reflect implemented changes
-   - Add references to archived change for traceability
-   - Ensure specs are current with codebase`}
-
-4. **Confirmation** ${autoYes ? '(AUTO-CONFIRMED via --yes)' : ''}${autoYes ? '' : `
-   - Display summary of changes to be archived
-   - Request user confirmation before proceeding
-   - Allow cancellation if something looks wrong`}
-
-5. **Cleanup and Validation**
-   - Remove empty directories
-   - Update any change indexes or manifests
-   - Run validation to ensure archive integrity
-   - Display archival summary
+**Command flags:** ${flags || '(none)'}
 
 `;
 
   if (projectDirectory) {
-    prompt += `**Working Directory:** ${projectDirectory}\n\n`;
+    prompt += `**Working Directory:** ${projectDirectory}\n`;
   }
 
-  prompt += `**Post-Archive:**
-- The change documentation remains accessible in the archive
-- Specs are updated to reflect the current system state
-- Your active changes directory stays clean and organized
+  prompt += `
+---
 
-This keeps your OpenSpec workspace organized while preserving history.
+**Guardrails**
+- Favor straightforward, minimal implementations first and add complexity only when it is requested or clearly required.
+- Keep changes tightly scoped to the requested outcome.
+- Refer to \`openspec/AGENTS.md\` (located inside the \`openspec/\` directory—run \`ls openspec\` or \`openspec update\` if you don't see it) if you need additional OpenSpec conventions or clarifications.
+
+**Steps**
+1. Identify the requested change ID (via the prompt or \`openspec list\`).
+2. Run \`openspec archive ${changeId}${flags}\` to let the CLI move the change and apply spec updates without prompts (use \`--skip-specs\` only for tooling-only work).
+3. Review the command output to confirm the target specs were updated and the change landed in \`changes/archive/\`.
+4. Validate with \`openspec validate --strict\` and inspect with \`openspec show ${changeId}\` if anything looks off.
+
+**Reference**
+- Inspect refreshed specs with \`openspec list --specs\` and address any validation issues before handing off.
 `;
 
   return prompt;
