@@ -467,7 +467,50 @@ class AgentSessionManager {
   }
 
   getHistory(): AgentHistoryItem[] {
-    return [...this.history];
+    // Start with in-memory history
+    const historyItems = [...this.history];
+
+    // If database is available, also load completed agents from database
+    if (isPersistenceEnabled()) {
+      try {
+        const agentsRepo = getAgentsRepository();
+        const dbAgents = agentsRepo.findAll();
+
+        // Filter for completed/terminated agents that aren't already in memory
+        const completedAgents = dbAgents.filter(agent =>
+          (agent.lifecycleState === 'stopped' || agent.lifecycleState === 'error') &&
+          !this.sessions.has(agent.id) && // Not in active sessions
+          !historyItems.some(item => item.id === agent.id) // Not already in history
+        );
+
+        // Convert database agents to history items
+        const dbHistoryItems: AgentHistoryItem[] = completedAgents.map(agent => ({
+          id: agent.id,
+          name: agent.name,
+          prompt: agent.prompt,
+          directory: agent.directory,
+          status: agent.status,
+          toolPermissions: agent.toolPermissions,
+          sessionId: agent.sessionId,
+          startTime: agent.startTime,
+          endTime: agent.endTime,
+          messageCount: agent.messages?.length || 0, // Messages might not be loaded
+        }));
+
+        // Combine and sort by start time (most recent first)
+        const allHistory = [...historyItems, ...dbHistoryItems];
+        allHistory.sort((a, b) => b.startTime - a.startTime);
+
+        // Limit to prevent too many items (keep most recent 50)
+        return allHistory.slice(0, 50);
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to load history from database:', error);
+        // Fall back to in-memory history only
+        return historyItems;
+      }
+    }
+
+    return historyItems;
   }
 
   getHistoricalSession(id: string): AgentSession | undefined {
