@@ -59,17 +59,33 @@ export function AgentInteractionModal({
 
     setIsSending(true);
     try {
-      // TODO: Implement follow-up message API endpoint
-      // For now, this would require SDK support for continuing conversations
       console.log("Sending message to agent:", agent.id, input);
 
-      // Placeholder - in a real implementation, you'd call an API endpoint
-      // that continues the agent's conversation
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // Call the reply API endpoint to continue conversation
+      const response = await fetch(`/api/agents/${agent.id}/reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: input }),
+      });
 
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to send message');
+      }
+
+      const result = await response.json();
+      console.log("Reply agent created:", result);
+
+      // Clear input on success
       setInput("");
+
+      // Optionally: You could redirect to the new agent or show a notification
+      // For now, the new agent will appear in the active agents list
     } catch (err) {
       console.error("Failed to send message:", err);
+      alert(`Failed to send message: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsSending(false);
     }
@@ -193,6 +209,12 @@ export function AgentInteractionModal({
 
           {!isInputCollapsed && (
             <div className="px-3 pb-3">
+              {!agent.sessionId && (
+                <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded text-xs text-blue-800 dark:text-blue-200">
+                  ℹ️ This agent was created before session management was enabled. Interactive replies are not available.
+                </div>
+              )}
+
               {isPaused && (
                 <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-800 dark:text-yellow-200">
                   ⏸️ Agent is paused. Resume to continue.
@@ -205,7 +227,7 @@ export function AgentInteractionModal({
                 </div>
               )}
 
-              {(isRunning || isPaused) && (
+              {(isRunning || isPaused) && agent.sessionId && (
                 <div className="space-y-2">
                   <Textarea
                     value={input}

@@ -11,7 +11,7 @@ import { getDatabase } from './client';
 /**
  * Current schema version
  */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 /**
  * Initialize database schema
@@ -316,6 +316,22 @@ function migrateV2toV3(db: Database.Database): void {
 }
 
 /**
+ * Migrate from schema version 3 to version 4
+ * Adds session_id column to agents table for SDK session management
+ */
+function migrateV3toV4(db: Database.Database): void {
+  console.log('[Schema] Migrating schema from version 3 to 4...');
+
+  // Add session_id column to agents table (nullable for backward compatibility)
+  db.exec(`
+    ALTER TABLE agents ADD COLUMN session_id TEXT;
+    CREATE INDEX IF NOT EXISTS idx_agents_session_id ON agents(session_id);
+  `);
+
+  console.log('[Schema] Migration to version 4 complete');
+}
+
+/**
  * Run database migrations
  * Applies incremental schema changes from currentVersion to CURRENT_SCHEMA_VERSION
  */
@@ -325,6 +341,7 @@ function runMigrations(db: Database.Database, fromVersion: number): void {
   const migrations: Array<(db: Database.Database) => void> = [
     migrateV1toV2,
     migrateV2toV3,
+    migrateV3toV4,
     // Add future migrations here
   ];
 

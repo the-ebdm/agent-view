@@ -7,6 +7,7 @@
 
 import { query } from '@anthropic-ai/claude-agent-sdk';
 import { streamAgentMessages } from './agent-sdk/stream-handler';
+import { resumeAgent, forkAgent } from './agent-sdk/client';
 import { getToolsForPreset } from './tool-permissions';
 import { sessionManager } from './agent-session-manager';
 import { getMessagesRepository, isPersistenceEnabled } from './database';
@@ -16,6 +17,8 @@ interface SpawnParams {
   prompt: string;
   directory: string;
   toolPermissions?: ToolPermission;
+  resumeFromSessionId?: string; // SDK session ID to resume from
+  forkFromSessionId?: string; // SDK session ID to fork from
 }
 
 /**
@@ -225,63 +228,102 @@ class AgentExecutionManager {
           : getToolsForPreset(params.toolPermissions.preset);
       }
 
-      // Create query generator with approval callback
-      const generator = query({
-        prompt: params.prompt,
-        options: {
-          cwd: params.directory,
-          allowedTools,
-          canUseTool: async (toolName: string, input: Record<string, unknown>) => {
-            // Check if tool is in allowed list
-            const isAllowed = !allowedTools || allowedTools.includes(toolName);
+      // Create canUseTool callback for approval handling
+      const canUseTool = async (toolName: string, input: Record<string, unknown>) => {
+        // Check if tool is in allowed list
+        const isAllowed = !allowedTools || allowedTools.includes(toolName);
 
-            if (isAllowed) {
-              // Tool is allowed, no approval needed
-              return { behavior: "allow" as const, updatedInput: input };
-            }
+        if (isAllowed) {
+          // Tool is allowed, no approval needed
+          return { behavior: "allow" as const, updatedInput: input };
+        }
 
-            // Tool requires approval - create pending approval
-            const description = this.generateDescription(toolName, input);
-            const approvalId = sessionManager.addPendingApproval(
-              id,
-              toolName as any, // ToolName type from types/agent.ts
-              description,
-              input
-            );
+        // Tool requires approval - create pending approval
+        const description = this.generateDescription(toolName, input);
+        const approvalId = sessionManager.addPendingApproval(
+          id,
+          toolName as any, // ToolName type from types/agent.ts
+          description,
+          input
+        );
 
-            console.log(`[ExecutionManager] Tool ${toolName} requires approval for agent ${id}`);
+        console.log(`[ExecutionManager] Tool ${toolName} requires approval for agent ${id}`);
 
-            // Wait for user approval
-            const approved = await this.waitForApproval(approvalId);
+        // Wait for user approval
+        const approved = await this.waitForApproval(approvalId);
 
-            if (approved) {
-              console.log(`[ExecutionManager] Tool ${toolName} approved for agent ${id}`);
-              return { behavior: "allow" as const, updatedInput: input };
-            } else {
-              console.log(`[ExecutionManager] Tool ${toolName} denied for agent ${id}`);
-              return {
-                behavior: "deny" as const,
-                message: `User denied permission to use ${toolName}`
-              };
-            }
-          }
-        },
-      });
+        if (approved) {
+          console.log(`[ExecutionManager] Tool ${toolName} approved for agent ${id}`);
+          return { behavior: "allow" as const, updatedInput: input };
+        } else {
+          console.log(`[ExecutionManager] Tool ${toolName} denied for agent ${id}`);
+          return {
+            behavior: "deny" as const,
+            message: `User denied permission to use ${toolName}`
+          };
+        }
+      };
+
+      // Create query generator based on session resumption mode
+      let generator: AsyncGenerator;
+
+      if (params.forkFromSessionId) {
+        // Fork from existing session
+        console.log(`[ExecutionManager] Forking agent ${id} from session ${params.forkFromSessionId}`);
+        generator = forkAgent(
+          params.forkFromSessionId,
+          params.prompt,
+          params.directory,
+          params.toolPermissions,
+          canUseTool // Pass approval callback
+        );
+      } else if (params.resumeFromSessionId) {
+        // Resume existing session
+        console.log(`[ExecutionManager] Resuming agent ${id} from session ${params.resumeFromSessionId}`);
+        generator = resumeAgent(
+          params.resumeFromSessionId,
+          params.prompt,
+          params.directory,
+          params.toolPermissions,
+          canUseTool // Pass approval callback
+        );
+      } else {
+        // Create new session
+        generator = query({
+          prompt: params.prompt,
+          options: {
+            cwd: params.directory,
+            allowedTools,
+            canUseTool,
+          },
+        });
+      }
 
       // Store generator
       this.activeExecutions.set(id, generator);
 
       // Stream messages
-      for await (const message of streamAgentMessages(generator)) {
-        // Broadcast to subscribers
-        this.broadcastMessage(id, message);
+      for await (const streamYield of streamAgentMessages(generator)) {
+        if (streamYield.type === 'metadata') {
+          // Extract and store session_id
+          const { sessionId } = streamYield.data;
+          if (sessionId) {
+            console.log(`[ExecutionManager] Captured session_id for agent ${id}:`, sessionId);
+            sessionManager.updateSessionId(id, sessionId);
+          }
+        } else if (streamYield.type === 'message') {
+          const message = streamYield.data;
 
-        // Add to session manager for persistence
-        sessionManager.addMessage(id, message);
+          // Broadcast to subscribers
+          this.broadcastMessage(id, message);
 
-        // Check for completion
-        if (message.type === 'error' || message.type === 'result') {
-          break;
+          // Add to session manager for persistence
+          sessionManager.addMessage(id, message);
+
+          // Check for completion
+          if (message.type === 'error' || message.type === 'result') {
+            break;
+          }
         }
       }
 

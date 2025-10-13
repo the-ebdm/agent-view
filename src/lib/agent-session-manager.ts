@@ -309,6 +309,31 @@ class AgentSessionManager {
     return activeAgentsList[activeAgentsList.length - 1];
   }
 
+  /**
+   * Update agent's SDK session ID
+   * Called when session_id is extracted from SDK init messages
+   */
+  updateSessionId(id: string, sessionId: string): void {
+    const session = this.sessions.get(id);
+    if (!session) {
+      console.warn(`[AgentSessionManager] Cannot update session_id: agent ${id} not found`);
+      return;
+    }
+
+    session.sessionId = sessionId;
+
+    // Persist to database
+    if (isPersistenceEnabled()) {
+      try {
+        const agentsRepo = getAgentsRepository();
+        agentsRepo.update(id, { sessionId } as Partial<AgentSession>);
+        console.log(`[AgentSessionManager] Persisted session_id for agent ${id}`);
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to persist session_id to database:', error);
+      }
+    }
+  }
+
   addMessage(id: string, message: AgentMessage): void {
     const session = this.sessions.get(id);
     if (session) {
@@ -377,6 +402,7 @@ class AgentSessionManager {
         directory: session.directory,
         status: session.status,
         toolPermissions: session.toolPermissions, // Phase 2
+        sessionId: session.sessionId,
         startTime: session.startTime,
         endTime: session.endTime,
         messageCount: session.messages.length,
@@ -391,6 +417,7 @@ class AgentSessionManager {
       directory: session.directory,
       status: session.status,
       toolPermissions: session.toolPermissions, // Phase 2
+      sessionId: session.sessionId,
       startTime: session.startTime,
       endTime: session.endTime,
       messageCount: session.messages.length,

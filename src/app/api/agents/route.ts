@@ -34,6 +34,7 @@ export async function GET(request: Request) {
         toolPermissions: agent.toolPermissions,
         projectId: agent.projectId,
         worktreeId: agent.worktreeId,
+        sessionId: agent.sessionId, // Include session ID for reply/fork support
         startTime: agent.startTime,
         messageCount: agent.messages.length,
         metrics,

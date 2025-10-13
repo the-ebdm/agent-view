@@ -40,6 +40,7 @@ export interface AgentSession {
   toolPermissions: ToolPermission; // Phase 2: Permission system
   projectId?: string; // Project association (auto-discovered)
   worktreeId?: string; // Worktree association (auto-discovered)
+  sessionId?: string; // SDK session ID for reply/fork/resume
   startTime: number;
   endTime?: number;
   pausedTime?: number; // Phase 2: Track pause duration
@@ -54,6 +55,7 @@ export interface AgentHistoryItem {
   directory: string;
   status: AgentStatus;
   toolPermissions: ToolPermission; // Phase 2: Permission history
+  sessionId?: string; // SDK session ID for reply/fork
   startTime: number;
   endTime?: number;
   messageCount: number;

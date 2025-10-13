@@ -53,3 +53,78 @@ export function getAgentQueryInstance(agentId: string, params: SpawnAgentParams)
     }
   });
 }
+
+/**
+ * Resume an existing SDK session with a new message
+ *
+ * @param sessionId - SDK session ID to resume
+ * @param prompt - New message/prompt to send
+ * @param directory - Working directory for the agent
+ * @param toolPermissions - Optional tool permissions
+ * @param canUseTool - Optional callback for tool approval
+ * @returns AsyncGenerator for streaming messages
+ */
+export function resumeAgent(
+  sessionId: string,
+  prompt: string,
+  directory: string,
+  toolPermissions?: SpawnAgentParams['toolPermissions'],
+  canUseTool?: (toolName: string, input: Record<string, unknown>) => Promise<{ behavior: 'allow' | 'deny'; updatedInput?: Record<string, unknown>; message?: string }>
+) {
+  // Get allowed tools from permissions
+  let allowedTools: string[] | undefined;
+  if (toolPermissions) {
+    allowedTools = toolPermissions.preset === 'custom'
+      ? toolPermissions.tools
+      : getToolsForPreset(toolPermissions.preset);
+  }
+
+  // Resume session with new prompt
+  return query({
+    prompt,
+    options: {
+      cwd: directory,
+      allowedTools,
+      canUseTool,
+      resume: sessionId, // SDK option to resume existing session
+    }
+  });
+}
+
+/**
+ * Fork an existing SDK session into a new independent session
+ *
+ * @param sessionId - SDK session ID to fork from
+ * @param prompt - Initial prompt for the forked session
+ * @param directory - Working directory for the agent
+ * @param toolPermissions - Optional tool permissions
+ * @param canUseTool - Optional callback for tool approval
+ * @returns AsyncGenerator for streaming messages
+ */
+export function forkAgent(
+  sessionId: string,
+  prompt: string,
+  directory: string,
+  toolPermissions?: SpawnAgentParams['toolPermissions'],
+  canUseTool?: (toolName: string, input: Record<string, unknown>) => Promise<{ behavior: 'allow' | 'deny'; updatedInput?: Record<string, unknown>; message?: string }>
+) {
+  // Get allowed tools from permissions
+  let allowedTools: string[] | undefined;
+  if (toolPermissions) {
+    allowedTools = toolPermissions.preset === 'custom'
+      ? toolPermissions.tools
+      : getToolsForPreset(toolPermissions.preset);
+  }
+
+  // Fork session with new prompt
+  return query({
+    prompt,
+    options: {
+      cwd: directory,
+      allowedTools,
+      canUseTool,
+      resume: sessionId, // Resume from parent session
+      forkSession: true, // SDK option to create new independent session
+    }
+  });
+}

@@ -69,20 +69,46 @@ Currently, Agent View ignores these session IDs, treating each agent spawn as a 
 - Cannot pause mid-tool-execution (waits for tool completion)
 - Acceptable because: pauses typically last minutes/hours, not milliseconds
 
-### Decision 3: Reply vs Resume Semantics
+### Decision 3: Reply vs Fork vs Resume - Clear Semantic Boundaries
 
-**Options:**
-1. Single "continue" operation with optional message
-2. Separate "reply" (with message) and "resume" (without message) ✓
-3. Reply only (always require a message)
+**The Problem:**
+Conversational AI workflows need three distinct operations that are often conflated:
+1. Continuing an existing conversation (Reply)
+2. Branching to explore alternatives (Fork)
+3. Restarting a paused conversation (Resume)
 
-**Choice:** Separate "reply" and "resume" operations
+**Semantics:**
 
-**Rationale:**
-- Reply = user sends new message (conversational)
-- Resume = continue where left off (workflow control)
-- Matches user mental models for each operation
-- Resume can be implemented as reply with empty/system message
+| Operation | Agent Identity | Session Behavior | Use Case | Example |
+|-----------|---------------|------------------|----------|---------|
+| **Reply** | Same agent (same ID, same name) | Continues same session | Send follow-up message to an agent | "Can you explain that further?" |
+| **Fork** | New agent (new ID, new name) | Creates new forked session | Branch to explore alternative | "Try that but use TypeScript instead" |
+| **Resume** | Same agent (same ID, same name) | Resumes paused session | Continue paused work | User clicks "Resume" on paused agent |
+
+**Critical Distinction - Reply vs Fork:**
+- **Reply** maintains **conversational continuity** - it's the same agent continuing the same conversation
+  - Same agent ID (critical!)
+  - Same agent name (keeps UI clean)
+  - Adds messages to existing conversation
+  - Like sending another message in a chat thread
+
+- **Fork** creates **conversational divergence** - it's a new agent exploring an alternative path
+  - New agent ID (independent lifecycle)
+  - New agent name (user can customize or auto-generates as "Original Name - fork")
+  - New session forked from parent's context
+  - Like branching a git commit
+
+**Why This Matters:**
+- **Without clear distinction**: Reply would clutter the UI with "Agent - reply", "Agent - reply - reply", etc.
+- **With clear distinction**: Reply keeps the conversation flowing naturally in one agent thread
+- **Fork is for exploration**: When you want to try something different while preserving the original
+
+**Choice:** Separate operations with clear semantics ✓
+
+**Implementation:**
+- Reply: `POST /api/agents/{id}/reply` - Restarts same agent with new message (reuses agent ID)
+- Fork: `POST /api/agents/{id}/fork` - Creates new agent from branch point (new agent ID)
+- Resume: `POST /api/agents/{id}/resume` - Restarts paused agent (same agent ID, optional message)
 
 ### Decision 4: Fork Relationship Tracking
 
@@ -126,24 +152,31 @@ SDK.query()
   → agents-repository persists to DB
 ```
 
-### Reply Flow
+### Reply Flow (Same Agent Continuation)
 ```
-User clicks "Reply" button
+User sends message via reply input
   → POST /api/agents/{id}/reply { message }
-  → Load agent from DB (get session_id)
+  → Load agent session (get session_id)
+  → Verify agent is not currently running
   → SDK.query({ resume: session_id, prompt: message })
-  → Start new execution with resumed context
-  → Stream messages as normal agent
+  → Start new execution on SAME agent (reuse agent ID)
+  → Set agent lifecycleState = 'running'
+  → Stream messages append to existing agent conversation
+  → Agent name remains unchanged
+  → Result: One continuous conversation in same agent
 ```
 
-### Fork Flow
+### Fork Flow (New Agent Branching)
 ```
 User clicks "Fork" button
   → POST /api/agents/{id}/fork { prompt, name? }
-  → Load agent from DB (get session_id)
-  → SDK.query({ resume: session_id, forkSession: true, prompt })
-  → Creates new agent with new session_id
-  → Both sessions exist independently
+  → Load parent agent from DB (get session_id)
+  → Generate NEW agent ID
+  → Determine name: user-provided OR "{parentName} - fork"
+  → SDK.query({ resume: parent_session_id, forkSession: true, prompt })
+  → Creates NEW agent with NEW agent ID and NEW session_id
+  → Parent and fork exist independently with separate lifecycles
+  → Result: Two agents - original unchanged, fork as new exploration branch
 ```
 
 ### Pause/Resume Flow (Rearchitected)
@@ -242,7 +275,12 @@ Resume:
    **A:** Deferred - rely on 20 concurrent agent limit for now, monitor usage patterns
 
 3. **Q:** Should reply create a new agent or extend existing?
-   **A:** Create new agent - maintains clean separation and history tracking
+   **A:** **CORRECTED DECISION**: Extend existing agent (same ID, same name)
+   **Rationale**: Reply is conversational continuation, not divergence. Creating new agents for every reply clutters the UI and breaks the conversational mental model. Fork is for branching/divergence.
 
 4. **Q:** How to handle session_id conflicts (same session resumed twice)?
-   **A:** SDK handles conflict resolution, app treats as new independent agent instance
+   **A:** Prevent via UI state - disable Reply/Resume buttons while agent is running. Return 409 Conflict if API receives concurrent requests for same agent.
+
+5. **Q:** What happens if user tries to reply to a running agent?
+   **A:** **Queue the reply** - Like Claude Code, allow multiple messages to be sent while agent is running. The SDK handles message queuing naturally through its conversation flow. When agent completes current task, it continues with the next message in queue.
+   **Implementation**: UI allows sending replies anytime. Messages are sent via SDK resume with the agent's session_id. The SDK and agent orchestration handle the sequential processing automatically.

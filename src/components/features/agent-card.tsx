@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAgentLifecycle } from '@/hooks/use-agent-lifecycle';
 import { useApprovals } from '@/contexts/approvals-context';
+import { ForkAgentModal } from './fork-agent-modal';
 import type { AgentSession, AgentMetrics } from '@/types/agent';
 
 interface AgentCardProps {
@@ -19,6 +20,7 @@ interface AgentCardProps {
 export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: AgentCardProps) {
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
   const [showConfirmStop, setShowConfirmStop] = useState(false);
+  const [showForkModal, setShowForkModal] = useState(false);
   const { approvalCount } = useApprovals(agent.id);
 
   const formatTime = (ms: number) => {
@@ -117,6 +119,15 @@ export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: Agen
     setShowConfirmStop(false);
   };
 
+  const handleFork = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowForkModal(true);
+  };
+
+  const handleForkModalClose = () => {
+    setShowForkModal(false);
+  };
+
   const isRunning = agent.lifecycleState === 'running';
   const isPaused = agent.lifecycleState === 'paused';
 
@@ -151,6 +162,15 @@ export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: Agen
           {' '}
           {agent.toolPermissions.preset}
         </Badge>
+        {agent.sessionId ? (
+          <Badge className="text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+            🧵 Session Available
+          </Badge>
+        ) : (
+          <Badge className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+            📵 No Session
+          </Badge>
+        )}
         {approvalCount > 0 && (
           <Badge className="text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 animate-pulse">
             ⚠️ {approvalCount} Approval{approvalCount !== 1 ? 's' : ''} Needed
@@ -201,6 +221,17 @@ export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: Agen
       {/* Actions */}
       {!showConfirmStop ? (
         <div className="flex gap-2">
+          {agent.sessionId && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleFork}
+              className="flex-1"
+              title="Create a fork of this agent with full conversation history"
+            >
+              🌱 Fork
+            </Button>
+          )}
           {isRunning && (
             <Button
               size="sm"
@@ -228,7 +259,7 @@ export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: Agen
             variant="destructive"
             onClick={handleStop}
             disabled={stop.isLoading}
-            className={isPaused || !isRunning ? 'flex-1' : ''}
+            className={!agent.sessionId || (isPaused || !isRunning) ? 'flex-1' : ''}
           >
             {stop.isLoading ? '🛑 Stopping...' : '🛑 Stop'}
           </Button>
@@ -262,5 +293,17 @@ export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: Agen
         </div>
       )}
     </Card>
+
+    {/* Fork Modal */}
+    {showForkModal && (
+      <ForkAgentModal
+        agent={agent}
+        onClose={handleForkModalClose}
+        onSuccess={(newAgent) => {
+          // Optional: You could add some success handling here
+          console.log("Fork created successfully:", newAgent);
+        }}
+      />
+    )}
   );
 }
