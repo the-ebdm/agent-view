@@ -7,7 +7,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ActiveAgentsDashboard } from '@/components/features/active-agents-dashboard';
-import { AgentSpawnModalV2 as AgentSpawnModal } from '@/components/features/agent-spawn-modal-v2';
+import { AgentSpawnModal } from '@/components/features/agent-spawn-modal';
 import { AgentHistoryList } from '@/components/features/agent-history-list';
 import { OpenSpecSection } from '@/components/openspec/openspec-section';
 import { HelpModal } from '@/components/features/help-modal';
