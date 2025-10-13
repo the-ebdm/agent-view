@@ -17,12 +17,13 @@ interface OpenSpecModalProps {
   entity: OpenSpecEntity;
   onClose: () => void;
   onUpdate?: () => void;
+  projectDirectory?: string;
 }
 
 type ViewMode = 'view' | 'edit';
 type TabType = 'proposal' | 'design' | 'tasks' | 'content';
 
-export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecModalProps) {
+export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirectory }: OpenSpecModalProps) {
   const [content, setContent] = useState<{
     proposal?: string;
     design?: string;
@@ -51,15 +52,22 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
       setError(null);
 
       try {
+        // Build URL with directory parameter
+        const params = new URLSearchParams();
+        if (projectDirectory) {
+          params.set('directory', projectDirectory);
+        }
+        const queryString = params.toString() ? `?${params.toString()}` : '';
+
         if (entity.type === 'spec') {
-          const response = await fetch(`/api/openspec/spec/${entity.id}`);
+          const response = await fetch(`/api/openspec/spec/${entity.id}${queryString}`);
           if (!response.ok) throw new Error('Failed to fetch spec');
 
           const data = await response.json();
           setContent(data.content || '');
         } else if (entity.type === 'change' || entity.type === 'archive') {
           const basePath = entity.type === 'change' ? 'change' : 'archive';
-          const response = await fetch(`/api/openspec/${basePath}/${entity.id}`);
+          const response = await fetch(`/api/openspec/${basePath}/${entity.id}${queryString}`);
           if (!response.ok) throw new Error('Failed to fetch change');
 
           const data = await response.json();
@@ -82,7 +90,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
     }
 
     fetchContent();
-  }, [entity]);
+  }, [entity, projectDirectory]);
 
   // Close on Escape key
   useEffect(() => {
@@ -118,8 +126,8 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
         : `/api/openspec/change/${entity.id}`;
 
       const body = entity.type === 'spec'
-        ? { content: contentToSave }
-        : { content: contentToSave, file: activeTab };
+        ? { content: contentToSave, directory: projectDirectory }
+        : { content: contentToSave, file: activeTab, directory: projectDirectory };
 
       const response = await fetch(endpoint, {
         method: 'PUT',
@@ -136,7 +144,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
     } finally {
       setIsSaving(false);
     }
-  }, [entity, activeTab, onUpdate]);
+  }, [entity, activeTab, onUpdate, projectDirectory]);
 
   // Handle validation
   const handleValidate = useCallback(async () => {
@@ -230,7 +238,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate }: OpenSpecMod
 
     // View mode
     return (
-      <div className="prose prose-invert max-w-none">
+      <div className="prose dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-a:text-blue-600 dark:prose-a:text-blue-400">
         <MarkdownRenderer content={getCurrentContent()} />
       </div>
     );

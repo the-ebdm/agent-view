@@ -7,18 +7,30 @@ import fs from 'fs/promises';
 import path from 'path';
 import matter from 'gray-matter';
 
-// Security: Define allowed base directory
-const OPENSPEC_BASE_DIR = path.join(process.cwd(), 'openspec');
+// Security: Define default base directory
+const DEFAULT_OPENSPEC_BASE_DIR = path.join(process.cwd(), 'openspec');
 
 // Rate limiting: Track file operations per user
 const operationCounts = new Map<string, { count: number; resetTime: number }>();
 const MAX_OPERATIONS_PER_MINUTE = 100;
 
 /**
+ * Get OpenSpec base directory for a project
+ */
+function getOpenSpecBaseDir(projectDir?: string): string {
+  if (projectDir) {
+    return path.join(projectDir, 'openspec');
+  }
+  return DEFAULT_OPENSPEC_BASE_DIR;
+}
+
+/**
  * Validate and normalize file path to prevent directory traversal
  * @throws Error if path is invalid or outside openspec directory
  */
-export function validatePath(filePath: string): string {
+export function validatePath(filePath: string, projectDir?: string): string {
+  const OPENSPEC_BASE_DIR = getOpenSpecBaseDir(projectDir);
+
   // Normalize the path
   const normalizedPath = path.normalize(filePath);
 
@@ -64,10 +76,10 @@ function checkRateLimit(userId: string = 'default'): void {
 /**
  * Read OpenSpec file with path validation
  */
-export async function readOpenSpecFile(filePath: string): Promise<string> {
+export async function readOpenSpecFile(filePath: string, projectDir?: string): Promise<string> {
   checkRateLimit();
 
-  const validPath = validatePath(filePath);
+  const validPath = validatePath(filePath, projectDir);
 
   try {
     const content = await fs.readFile(validPath, 'utf-8');
@@ -85,11 +97,12 @@ export async function readOpenSpecFile(filePath: string): Promise<string> {
  */
 export async function writeOpenSpecFile(
   filePath: string,
-  content: string
+  content: string,
+  projectDir?: string
 ): Promise<void> {
   checkRateLimit();
 
-  const validPath = validatePath(filePath);
+  const validPath = validatePath(filePath, projectDir);
 
   try {
     // Ensure directory exists
@@ -106,10 +119,10 @@ export async function writeOpenSpecFile(
 /**
  * List files in OpenSpec directory
  */
-export async function listOpenSpecFiles(directory: string): Promise<string[]> {
+export async function listOpenSpecFiles(directory: string, projectDir?: string): Promise<string[]> {
   checkRateLimit();
 
-  const validPath = validatePath(directory);
+  const validPath = validatePath(directory, projectDir);
 
   try {
     const entries = await fs.readdir(validPath, { withFileTypes: true });
@@ -128,10 +141,10 @@ export async function listOpenSpecFiles(directory: string): Promise<string[]> {
 /**
  * List directories in OpenSpec directory
  */
-export async function listOpenSpecDirectories(directory: string): Promise<string[]> {
+export async function listOpenSpecDirectories(directory: string, projectDir?: string): Promise<string[]> {
   checkRateLimit();
 
-  const validPath = validatePath(directory);
+  const validPath = validatePath(directory, projectDir);
 
   try {
     const entries = await fs.readdir(validPath, { withFileTypes: true });
@@ -150,11 +163,11 @@ export async function listOpenSpecDirectories(directory: string): Promise<string
 /**
  * Create change directory structure
  */
-export async function createChangeDirectory(changeId: string): Promise<void> {
+export async function createChangeDirectory(changeId: string, projectDir?: string): Promise<void> {
   checkRateLimit();
 
   const changePath = path.join('changes', changeId);
-  const validPath = validatePath(changePath);
+  const validPath = validatePath(changePath, projectDir);
 
   try {
     await fs.mkdir(validPath, { recursive: true });
@@ -164,9 +177,9 @@ export async function createChangeDirectory(changeId: string): Promise<void> {
     const designTemplate = `# Design: ${changeId}\n\n## Context\n\n## Goals / Non-Goals\n\n## Decisions\n`;
     const tasksTemplate = `# Implementation Tasks: ${changeId}\n\n- [ ] Task 1\n`;
 
-    await writeOpenSpecFile(path.join(changePath, 'proposal.md'), proposalTemplate);
-    await writeOpenSpecFile(path.join(changePath, 'design.md'), designTemplate);
-    await writeOpenSpecFile(path.join(changePath, 'tasks.md'), tasksTemplate);
+    await writeOpenSpecFile(path.join(changePath, 'proposal.md'), proposalTemplate, projectDir);
+    await writeOpenSpecFile(path.join(changePath, 'design.md'), designTemplate, projectDir);
+    await writeOpenSpecFile(path.join(changePath, 'tasks.md'), tasksTemplate, projectDir);
   } catch (error: any) {
     throw new Error(`Failed to create change directory: ${error.message}`);
   }
@@ -175,11 +188,11 @@ export async function createChangeDirectory(changeId: string): Promise<void> {
 /**
  * Move change to archive
  */
-export async function moveToArchive(changeId: string): Promise<void> {
+export async function moveToArchive(changeId: string, projectDir?: string): Promise<void> {
   checkRateLimit();
 
-  const sourcePath = validatePath(path.join('changes', changeId));
-  const destPath = validatePath(path.join('changes', 'archive', changeId));
+  const sourcePath = validatePath(path.join('changes', changeId), projectDir);
+  const destPath = validatePath(path.join('changes', 'archive', changeId), projectDir);
 
   try {
     // Ensure archive directory exists
@@ -195,10 +208,10 @@ export async function moveToArchive(changeId: string): Promise<void> {
 /**
  * Delete OpenSpec file or directory
  */
-export async function deleteOpenSpec(filePath: string): Promise<void> {
+export async function deleteOpenSpec(filePath: string, projectDir?: string): Promise<void> {
   checkRateLimit();
 
-  const validPath = validatePath(filePath);
+  const validPath = validatePath(filePath, projectDir);
 
   try {
     const stats = await fs.stat(validPath);
@@ -219,8 +232,8 @@ export async function deleteOpenSpec(filePath: string): Promise<void> {
 /**
  * Parse markdown file with frontmatter
  */
-export async function parseMarkdownFile(filePath: string) {
-  const content = await readOpenSpecFile(filePath);
+export async function parseMarkdownFile(filePath: string, projectDir?: string) {
+  const content = await readOpenSpecFile(filePath, projectDir);
   const { data, content: markdown } = matter(content);
 
   return {
@@ -232,9 +245,9 @@ export async function parseMarkdownFile(filePath: string) {
 /**
  * Check if file or directory exists
  */
-export async function exists(filePath: string): Promise<boolean> {
+export async function exists(filePath: string, projectDir?: string): Promise<boolean> {
   try {
-    const validPath = validatePath(filePath);
+    const validPath = validatePath(filePath, projectDir);
     await fs.access(validPath);
     return true;
   } catch {
@@ -245,10 +258,10 @@ export async function exists(filePath: string): Promise<boolean> {
 /**
  * Get file statistics
  */
-export async function getFileStats(filePath: string) {
+export async function getFileStats(filePath: string, projectDir?: string) {
   checkRateLimit();
 
-  const validPath = validatePath(filePath);
+  const validPath = validatePath(filePath, projectDir);
 
   try {
     const stats = await fs.stat(validPath);

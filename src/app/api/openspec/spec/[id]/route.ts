@@ -10,10 +10,12 @@ import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const directory = searchParams.get('directory'); // Project directory
 
     // Try to get spec details from CLI first
     try {
@@ -22,7 +24,7 @@ export async function GET(
     } catch (cliError) {
       // Fallback to direct file read
       const specPath = path.join('specs', `${id}.md`);
-      const content = await readOpenSpecFile(specPath);
+      const content = await readOpenSpecFile(specPath, directory || undefined);
 
       return NextResponse.json({
         id,
@@ -32,7 +34,8 @@ export async function GET(
       });
     }
   } catch (error: any) {
-    console.error(`Failed to get spec ${params.id}:`, error);
+    const resolvedParams = await params;
+    console.error(`Failed to get spec ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
       { error: error.message || 'Failed to get spec' },
@@ -43,12 +46,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
-    const { content } = body;
+    const { content, directory } = body;
 
     if (!content || typeof content !== 'string') {
       return NextResponse.json(
@@ -59,14 +62,15 @@ export async function PUT(
 
     // Write updated spec content
     const specPath = path.join('specs', `${id}.md`);
-    await writeOpenSpecFile(specPath, content);
+    await writeOpenSpecFile(specPath, content, directory || undefined);
 
     return NextResponse.json({
       success: true,
       message: `Spec ${id} updated successfully`,
     });
   } catch (error: any) {
-    console.error(`Failed to update spec ${params.id}:`, error);
+    const resolvedParams = await params;
+    console.error(`Failed to update spec ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
       { error: error.message || 'Failed to update spec' },

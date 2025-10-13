@@ -9,19 +9,20 @@ import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const file = searchParams.get('file'); // 'proposal' | 'design' | 'tasks' | null
+    const directory = searchParams.get('directory'); // Project directory
 
     const archivePath = path.join('changes', 'archive', id);
 
     // If specific file requested, return its content
     if (file) {
       const filePath = path.join(archivePath, `${file}.md`);
-      const content = await readOpenSpecFile(filePath);
+      const content = await readOpenSpecFile(filePath, directory || undefined);
 
       return NextResponse.json({
         file,
@@ -31,9 +32,9 @@ export async function GET(
 
     // Read all archive files directly
     const [proposal, design, tasks] = await Promise.allSettled([
-      readOpenSpecFile(path.join(archivePath, 'proposal.md')),
-      readOpenSpecFile(path.join(archivePath, 'design.md')),
-      readOpenSpecFile(path.join(archivePath, 'tasks.md')),
+      readOpenSpecFile(path.join(archivePath, 'proposal.md'), directory || undefined),
+      readOpenSpecFile(path.join(archivePath, 'design.md'), directory || undefined),
+      readOpenSpecFile(path.join(archivePath, 'tasks.md'), directory || undefined),
     ]);
 
     return NextResponse.json({
@@ -44,7 +45,8 @@ export async function GET(
       tasks: tasks.status === 'fulfilled' ? tasks.value : null,
     });
   } catch (error: any) {
-    console.error(`Failed to get archive ${params.id}:`, error);
+    const resolvedParams = await params;
+    console.error(`Failed to get archive ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
       { error: error.message || 'Failed to get archive' },

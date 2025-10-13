@@ -15,19 +15,20 @@ import path from 'path';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const file = searchParams.get('file'); // 'proposal' | 'design' | 'tasks' | null
+    const directory = searchParams.get('directory'); // Project directory
 
     const changePath = path.join('changes', id);
 
     // If specific file requested, return its content
     if (file) {
       const filePath = path.join(changePath, `${file}.md`);
-      const content = await readOpenSpecFile(filePath);
+      const content = await readOpenSpecFile(filePath, directory || undefined);
 
       return NextResponse.json({
         file,
@@ -37,9 +38,9 @@ export async function GET(
 
     // Read all change files directly
     const [proposal, design, tasks] = await Promise.allSettled([
-      readOpenSpecFile(path.join(changePath, 'proposal.md')),
-      readOpenSpecFile(path.join(changePath, 'design.md')),
-      readOpenSpecFile(path.join(changePath, 'tasks.md')),
+      readOpenSpecFile(path.join(changePath, 'proposal.md'), directory || undefined),
+      readOpenSpecFile(path.join(changePath, 'design.md'), directory || undefined),
+      readOpenSpecFile(path.join(changePath, 'tasks.md'), directory || undefined),
     ]);
 
     return NextResponse.json({
@@ -50,7 +51,8 @@ export async function GET(
       tasks: tasks.status === 'fulfilled' ? tasks.value : null,
     });
   } catch (error: any) {
-    console.error(`Failed to get change ${params.id}:`, error);
+    const resolvedParams = await params;
+    console.error(`Failed to get change ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
       { error: error.message || 'Failed to get change' },
@@ -61,12 +63,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
-    const { content, file } = body;
+    const { content, file, directory } = body;
 
     if (!content || typeof content !== 'string') {
       return NextResponse.json(
@@ -84,14 +86,15 @@ export async function PUT(
 
     // Write updated file content
     const filePath = path.join('changes', id, `${file}.md`);
-    await writeOpenSpecFile(filePath, content);
+    await writeOpenSpecFile(filePath, content, directory || undefined);
 
     return NextResponse.json({
       success: true,
       message: `Change ${id} ${file} updated successfully`,
     });
   } catch (error: any) {
-    console.error(`Failed to update change ${params.id}:`, error);
+    const resolvedParams = await params;
+    console.error(`Failed to update change ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
       { error: error.message || 'Failed to update change' },
@@ -102,14 +105,17 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const directory = searchParams.get('directory'); // Project directory
+
     const changePath = path.join('changes', id);
 
     // Check if change exists
-    const changeExists = await exists(changePath);
+    const changeExists = await exists(changePath, directory || undefined);
     if (!changeExists) {
       return NextResponse.json(
         { error: `Change ${id} not found` },
@@ -118,14 +124,15 @@ export async function DELETE(
     }
 
     // Delete change directory
-    await deleteOpenSpec(changePath);
+    await deleteOpenSpec(changePath, directory || undefined);
 
     return NextResponse.json({
       success: true,
       message: `Change ${id} deleted successfully`,
     });
   } catch (error: any) {
-    console.error(`Failed to delete change ${params.id}:`, error);
+    const resolvedParams = await params;
+    console.error(`Failed to delete change ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
       { error: error.message || 'Failed to delete change' },

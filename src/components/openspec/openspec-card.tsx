@@ -27,18 +27,18 @@ export function OpenSpecCard({
 }: OpenSpecCardProps) {
   return (
     <div
-      className="group relative flex flex-col rounded-lg border border-gray-700 dark:border-gray-700 bg-gray-900/50 dark:bg-gray-900/50 p-4 shadow-sm transition-all hover:shadow-md hover:border-blue-500 cursor-pointer"
+      className="group relative flex flex-col rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 p-5 shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:-translate-y-0.5"
       onClick={onView}
     >
       {/* Header with icon and name */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 flex-1 min-w-0">
-          <div className="text-2xl flex-shrink-0">{icon}</div>
+          <div className="text-2xl flex-shrink-0 group-hover:scale-110 transition-transform duration-200">{icon}</div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-white dark:text-white truncate">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
               {entity.name}
             </h3>
-            <p className="text-xs text-gray-400 dark:text-gray-400 truncate mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-1 font-mono">
               {entity.id}
             </p>
           </div>
@@ -52,14 +52,14 @@ export function OpenSpecCard({
 
       {/* Stats */}
       {stats && (
-        <div className="mt-3 flex items-center gap-4 text-xs text-gray-300 dark:text-gray-300">
+        <div className="mt-4 flex items-center gap-3 text-xs text-gray-600 dark:text-gray-300">
           {stats}
         </div>
       )}
 
       {/* Actions (show on hover) */}
       {actions && (
-        <div className="mt-3 pt-3 border-t border-gray-700 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             {actions}
           </div>
@@ -68,7 +68,7 @@ export function OpenSpecCard({
 
       {/* Last updated */}
       {entity.updatedAt && (
-        <div className="mt-2 text-xs text-gray-500 dark:text-gray-500">
+        <div className="mt-3 text-xs text-gray-400 dark:text-gray-500">
           Updated {formatRelativeTime(entity.updatedAt)}
         </div>
       )}
