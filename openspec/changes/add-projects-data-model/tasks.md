@@ -61,7 +61,7 @@
 
 ## 2. Data Migration - Backfill Projects
 
-- [ ] 2.1 Implement project backfill from existing agents
+- [x] 2.1 Implement project backfill from existing agents
   - Query unique directories from agents table
   - Create project record for each unique directory
   - Generate project name from directory basename
@@ -69,11 +69,11 @@
   - Calculate active_agent_count from agents with lifecycle_state IN ('running', 'paused')
   - Set last_used to MAX(start_time) for directory
   - Set created_at to MIN(start_time) for directory
-- [ ] 2.2 Link agents to backfilled projects
+- [x] 2.2 Link agents to backfilled projects
   - Update agents.project_id to match projects.directory
   - Verify all agents have valid project_id after migration
   - Log migration statistics (projects created, agents linked)
-- [ ] 2.3 Handle migration errors
+- [x] 2.3 Handle migration errors
   - Wrap migration in transaction for atomicity
   - Roll back if any step fails
   - Log detailed error messages
