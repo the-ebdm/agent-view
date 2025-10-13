@@ -4,27 +4,29 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import type { ToolPermission, ToolPermissionPreset, ToolName } from '@/types/agent';
 import { ALL_TOOLS, TOOL_PRESETS, DANGEROUS_TOOLS, TOOL_DESCRIPTIONS } from '@/lib/tool-permissions';
-import { useActiveAgents } from '@/contexts/active-agents-context';
+import { ActiveAgentsContext } from '@/contexts/active-agents-context';
 import { AGENT_TEMPLATES, AgentConfigStorage, type SavedAgentConfig, type AgentTemplate } from '@/lib/agent-templates';
 
 interface AgentSpawnModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSpawn?: (agentId: string) => void;
+  defaultDirectory?: string;
 }
 
-export function AgentSpawnModal({ isOpen, onClose, onSpawn }: AgentSpawnModalProps) {
-  const { refreshAgents } = useActiveAgents();
+export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: AgentSpawnModalProps) {
+  // Optional context - may not be available on all pages
+  const activeAgentsContext = useContext(ActiveAgentsContext);
   const [activeTab, setActiveTab] = useState<'templates' | 'recent' | 'saved'>('templates');
   const [prompt, setPrompt] = useState('');
-  const [directory, setDirectory] = useState('/Users/ericmuir/Projects/agent-view');
+  const [directory, setDirectory] = useState(defaultDirectory || '/Users/ericmuir/Projects/agent-view');
   const [name, setName] = useState('');
   const [preset, setPreset] = useState<ToolPermissionPreset>('standard');
   const [customTools, setCustomTools] = useState<Set<ToolName>>(new Set(['Read', 'Grep', 'Glob']));
@@ -125,8 +127,10 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn }: AgentSpawnModalPro
       setShowDangerousWarning(false);
       setShowSaveConfig(false);
 
-      // Refresh agents list
-      await refreshAgents();
+      // Refresh agents list if context is available
+      if (activeAgentsContext?.refreshAgents) {
+        await activeAgentsContext.refreshAgents();
+      }
 
       // Close modal
       onClose();

@@ -18,7 +18,7 @@ interface ActiveAgentsContextValue {
   removeAgent: (id: string) => void;
 }
 
-const ActiveAgentsContext = createContext<ActiveAgentsContextValue | undefined>(undefined);
+export const ActiveAgentsContext = createContext<ActiveAgentsContextValue | undefined>(undefined);
 
 interface ActiveAgentsProviderProps {
   children: ReactNode;

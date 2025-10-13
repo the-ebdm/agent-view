@@ -18,7 +18,12 @@ import type {
   OpenSpecEntity,
 } from '@/types/openspec';
 
-export function OpenSpecSection() {
+interface OpenSpecSectionProps {
+  projectDirectory?: string;
+  openspecPath?: string;
+}
+
+export function OpenSpecSection({ projectDirectory, openspecPath }: OpenSpecSectionProps = {}) {
   const [specs, setSpecs] = useState<CapabilitySpec[]>([]);
   const [changes, setChanges] = useState<ChangeProposal[]>([]);
   const [archives, setArchives] = useState<ArchivedChange[]>([]);
