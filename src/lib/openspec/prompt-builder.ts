@@ -137,7 +137,9 @@ export function buildReviewChangePrompt(
 3. Validate with \`openspec validate <id> --strict\` and resolve every issue before sharing the proposal.
 4. Check for the existence of any files mentioned by the tasks.md and review the implementation.
 5. Update tasks.md to reflect the progress of the change.
-6. Provide feedback on the proposed changes and ask the necessary follow-up questions before editing files or parallelizable work.
+6. Provide feedback on the proposed changes and ask the necessary follow-up questions.
+
+Your job is to review the proposal and provide feedback on the proposed changes not to complete the tasks.
 `;
   return prompt;
 }

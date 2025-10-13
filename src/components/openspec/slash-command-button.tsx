@@ -8,6 +8,7 @@
 import React, { useState } from "react";
 import {
   buildApplyChangePrompt,
+  buildReviewChangePrompt,
   buildProposalPrompt,
   buildArchivePrompt,
   type OpenSpecChangeContext,
@@ -154,7 +155,7 @@ export function SlashCommandButton({
             changeId: id,
             name: id,
           };
-          prompt = buildApplyChangePrompt(reviewContext, projectDirectory);
+          prompt = buildReviewChangePrompt(reviewContext, projectDirectory);
           agentName = `Review - ${reviewContext.name}`;
           break;
 
