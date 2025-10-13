@@ -1,11 +1,12 @@
 // Phase 2: Agent Card component for dashboard grid
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAgentLifecycle } from '@/hooks/use-agent-lifecycle';
+import { useApprovals } from '@/contexts/approvals-context';
 import type { AgentSession, AgentMetrics } from '@/types/agent';
 
 interface AgentCardProps {
@@ -18,27 +19,7 @@ interface AgentCardProps {
 export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: AgentCardProps) {
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
   const [showConfirmStop, setShowConfirmStop] = useState(false);
-  const [approvalCount, setApprovalCount] = useState(0);
-
-  // Fetch pending approvals count
-  useEffect(() => {
-    const fetchApprovals = async () => {
-      try {
-        const response = await fetch(`/api/agents/${agent.id}/approvals`);
-        if (response.ok) {
-          const data = await response.json();
-          setApprovalCount(data.count || 0);
-        }
-      } catch (error) {
-        console.error('Error fetching approvals:', error);
-      }
-    };
-
-    fetchApprovals();
-    // Poll for updates
-    const interval = setInterval(fetchApprovals, 3000);
-    return () => clearInterval(interval);
-  }, [agent.id]);
+  const { approvalCount } = useApprovals(agent.id);
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);

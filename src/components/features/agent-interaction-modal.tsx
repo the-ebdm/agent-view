@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { AgentOutputStream } from "./agent-output-stream";
 import { useAgentStream } from "@/hooks/use-agent-stream";
 import { useAgentLifecycle } from "@/hooks/use-agent-lifecycle";
+import { useApprovals } from "@/contexts/approvals-context";
 import type { AgentSession } from "@/types/agent";
 
 interface AgentInteractionModalProps {
@@ -22,9 +23,9 @@ export function AgentInteractionModal({
 }: AgentInteractionModalProps) {
   const { messages, status } = useAgentStream(agent.id);
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
+  const { approvalCount } = useApprovals(agent.id);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [approvalCount, setApprovalCount] = useState(0);
   const [isInputCollapsed, setIsInputCollapsed] = useState(() => {
     // Load from localStorage on mount
     if (typeof window !== 'undefined') {
@@ -34,26 +35,6 @@ export function AgentInteractionModal({
     return false;
   });
   const modalRef = useRef<HTMLDivElement>(null);
-
-  // Fetch pending approvals count
-  useEffect(() => {
-    const fetchApprovals = async () => {
-      try {
-        const response = await fetch(`/api/agents/${agent.id}/approvals`);
-        if (response.ok) {
-          const data = await response.json();
-          setApprovalCount(data.count || 0);
-        }
-      } catch (error) {
-        console.error('Error fetching approvals:', error);
-      }
-    };
-
-    fetchApprovals();
-    // Poll for updates
-    const interval = setInterval(fetchApprovals, 3000);
-    return () => clearInterval(interval);
-  }, [agent.id]);
 
   // Save to localStorage when state changes
   useEffect(() => {

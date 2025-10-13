@@ -4,8 +4,9 @@
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useApprovals } from '@/contexts/approvals-context';
 
 interface PendingApproval {
   id: string;
@@ -22,32 +23,11 @@ interface PermissionApprovalDrawerProps {
 }
 
 export function PermissionApprovalDrawer({ agentId, isOpen, onClose }: PermissionApprovalDrawerProps) {
-  const [approvals, setApprovals] = useState<PendingApproval[]>([]);
+  const { approvals: approvalsData, refresh } = useApprovals(agentId);
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
-  // Fetch pending approvals
-  useEffect(() => {
-    if (!isOpen || !agentId) return;
-
-    const fetchApprovals = async () => {
-      try {
-        const response = await fetch(`/api/agents/${agentId}/approvals`);
-        if (response.ok) {
-          const data = await response.json();
-          setApprovals(data.approvals || []);
-        }
-      } catch (error) {
-        console.error('Error fetching approvals:', error);
-      }
-    };
-
-    fetchApprovals();
-
-    // Poll for updates while drawer is open
-    const interval = setInterval(fetchApprovals, 2000);
-    return () => clearInterval(interval);
-  }, [agentId, isOpen]);
+  const approvals = approvalsData as PendingApproval[];
 
   const handleApprove = async (approvalId: string) => {
     setProcessingId(approvalId);
@@ -61,7 +41,8 @@ export function PermissionApprovalDrawer({ agentId, isOpen, onClose }: Permissio
       });
 
       if (response.ok) {
-        setApprovals(prev => prev.filter(a => a.id !== approvalId));
+        // Refresh approvals from context
+        await refresh();
       }
     } catch (error) {
       console.error('Error approving:', error);
@@ -83,7 +64,8 @@ export function PermissionApprovalDrawer({ agentId, isOpen, onClose }: Permissio
       });
 
       if (response.ok) {
-        setApprovals(prev => prev.filter(a => a.id !== approvalId));
+        // Refresh approvals from context
+        await refresh();
       }
     } catch (error) {
       console.error('Error denying:', error);

@@ -14,6 +14,7 @@ import { OpenSpecSection } from '@/components/openspec/openspec-section';
 import { HelpModal } from '@/components/features/help-modal';
 import { useAgentHistory } from '@/hooks/use-agent-history';
 import { ActiveAgentsProvider, useActiveAgents } from '@/contexts/active-agents-context';
+import { ApprovalsProvider } from '@/contexts/approvals-context';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -359,7 +360,9 @@ export default function ProjectDetailPage({ params }: ProjectDetailProps) {
 
   return (
     <ActiveAgentsProvider pollInterval={2000}>
-      <ProjectDetailContent projectId={resolvedParams.id} />
+      <ApprovalsProvider>
+        <ProjectDetailContent projectId={resolvedParams.id} />
+      </ApprovalsProvider>
     </ActiveAgentsProvider>
   );
 }

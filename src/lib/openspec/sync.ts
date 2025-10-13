@@ -1,6 +1,17 @@
 /**
  * OpenSpec Sync
- * Bidirectional sync between filesystem (git) and database cache
+ *
+ * Bidirectional synchronization between filesystem (git) and database cache.
+ * Maintains git as the single source of truth while providing fast database queries.
+ *
+ * Key features:
+ * - Extracts accurate timestamps from git commit history
+ * - Caches parsed OpenSpec entities (specs, changes, archives) in SQLite
+ * - Detects staleness and triggers automatic sync when needed
+ * - Prevents concurrent sync operations with locking mechanism
+ * - Provides detailed sync statistics and error reporting
+ *
+ * @module sync
  */
 
 import path from 'path';
@@ -12,7 +23,10 @@ import { getOpenSpecRepository } from '../database/repositories/openspec';
 import type { CapabilitySpec, ChangeProposal, ArchivedChange, ChangeStatus } from '@/types/openspec';
 
 /**
- * Sync result statistics
+ * Sync result statistics.
+ *
+ * Provides detailed information about what was synchronized, including
+ * counts of added, updated, and removed entities for each type.
  */
 export interface SyncResult {
   success: boolean;
@@ -26,19 +40,44 @@ export interface SyncResult {
 }
 
 /**
- * Sync options
+ * Sync options for controlling synchronization behavior.
  */
 export interface SyncOptions {
+  /** Force full sync even if database appears current */
   force?: boolean;
+  /** Use incremental sync with mtime checks (not yet implemented) */
   incremental?: boolean;
 }
 
-// Prevent concurrent syncs
+/** Prevents concurrent sync operations - only one sync can run at a time */
 let syncInProgress = false;
 
 /**
- * Sync OpenSpec entities from filesystem to database
- * This is the main sync function that coordinates all entity types
+ * Sync OpenSpec entities from filesystem to database.
+ *
+ * This is the main sync function that coordinates synchronization of all
+ * entity types (specs, changes, archives). It:
+ * - Prevents concurrent syncs with a lock mechanism
+ * - Reads entities from filesystem via OpenSpec CLI
+ * - Extracts accurate timestamps from git history
+ * - Parses content and metadata (requirements, tasks, etc.)
+ * - Upserts entities to database with proper timestamps
+ * - Detects and removes entities deleted from filesystem
+ * - Returns detailed statistics and any errors encountered
+ *
+ * @param options - Sync options (force, incremental, etc.)
+ * @returns Promise resolving to SyncResult with statistics and errors
+ *
+ * @example
+ * // Manual sync with force flag
+ * const result = await syncFromFilesystem({ force: true });
+ * console.log(`Synced: +${result.stats.changes.added} changes`);
+ *
+ * @example
+ * // Automatic sync (checks staleness first)
+ * if (needsSync()) {
+ *   await syncFromFilesystem();
+ * }
  */
 export async function syncFromFilesystem(options: SyncOptions = {}): Promise<SyncResult> {
   const startTime = Date.now();
@@ -111,7 +150,19 @@ export async function syncFromFilesystem(options: SyncOptions = {}): Promise<Syn
 }
 
 /**
- * Sync specs from filesystem to database
+ * Sync specs from filesystem to database.
+ *
+ * Internal helper that:
+ * - Lists all specs from filesystem via CLI
+ * - Reads and parses spec content (requirements, scenarios)
+ * - Extracts git timestamps (created, updated)
+ * - Upserts to database with accurate metadata
+ * - Removes specs deleted from filesystem
+ *
+ * @param repo - OpenSpec repository instance
+ * @param errors - Array to accumulate error messages
+ * @returns Promise resolving to sync statistics for specs
+ * @internal
  */
 async function syncSpecs(
   repo: ReturnType<typeof getOpenSpecRepository>,
@@ -194,7 +245,22 @@ async function syncSpecs(
 }
 
 /**
- * Sync changes from filesystem to database
+ * Sync changes from filesystem to database.
+ *
+ * Internal helper that:
+ * - Lists all changes from filesystem via CLI
+ * - Reads proposal.md, design.md, tasks.md (optional files)
+ * - Parses tasks to calculate completion progress
+ * - Derives change status from task completion
+ * - Extracts git timestamps (created, updated)
+ * - Upserts to database with accurate metadata
+ * - Preserves validation status from previous sync
+ * - Removes changes deleted from filesystem
+ *
+ * @param repo - OpenSpec repository instance
+ * @param errors - Array to accumulate error messages
+ * @returns Promise resolving to sync statistics for changes
+ * @internal
  */
 async function syncChanges(
   repo: ReturnType<typeof getOpenSpecRepository>,
@@ -318,7 +384,18 @@ async function syncChanges(
 }
 
 /**
- * Sync archives from filesystem to database
+ * Sync archives from filesystem to database.
+ *
+ * Internal helper that:
+ * - Lists all archived changes from filesystem via CLI
+ * - Extracts git timestamps (archived date, created, updated)
+ * - Upserts to database with accurate metadata
+ * - Removes archives deleted from filesystem
+ *
+ * @param repo - OpenSpec repository instance
+ * @param errors - Array to accumulate error messages
+ * @returns Promise resolving to sync statistics for archives
+ * @internal
  */
 async function syncArchives(
   repo: ReturnType<typeof getOpenSpecRepository>,
@@ -384,7 +461,19 @@ async function syncArchives(
 }
 
 /**
- * Check if database needs sync (is stale)
+ * Check if database needs synchronization (is stale).
+ *
+ * A database is considered stale if:
+ * - No sync has occurred yet (lastSyncedAt is null)
+ * - Last sync was more than 5 minutes ago
+ *
+ * @returns true if database needs sync, false if current
+ *
+ * @example
+ * if (needsSync()) {
+ *   console.log('Database is stale, triggering sync...');
+ *   await syncFromFilesystem();
+ * }
  */
 export function needsSync(): boolean {
   const repo = getOpenSpecRepository();
@@ -393,7 +482,19 @@ export function needsSync(): boolean {
 }
 
 /**
- * Get current sync status
+ * Get current sync status information.
+ *
+ * Returns detailed status including:
+ * - Last sync timestamp
+ * - Staleness indicator
+ * - Entity counts (specs, changes, archives)
+ *
+ * @returns Sync status object with timestamps and counts
+ *
+ * @example
+ * const status = getSyncStatus();
+ * console.log(`Last synced: ${status.lastSyncedAt}`);
+ * console.log(`Total entities: ${status.specsCount + status.changesCount + status.archivesCount}`);
  */
 export function getSyncStatus() {
   const repo = getOpenSpecRepository();
