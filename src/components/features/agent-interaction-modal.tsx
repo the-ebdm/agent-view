@@ -22,6 +22,7 @@ export function AgentInteractionModal({
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isInputCollapsed, setIsInputCollapsed] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Close on escape key
@@ -72,25 +73,36 @@ export function AgentInteractionModal({
         ref={modalRef}
         className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold truncate">{agent.name}</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-              {agent.directory}
-            </p>
+        {/* Compact Header */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div
+              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                isRunning
+                  ? "bg-green-500 animate-pulse"
+                  : isPaused
+                  ? "bg-yellow-500"
+                  : "bg-gray-500"
+              }`}
+            />
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base font-semibold truncate">{agent.name}</h2>
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
+              {messages.length} msgs
+            </span>
           </div>
 
-          <div className="flex items-center gap-2 ml-4">
-            {/* Lifecycle Controls */}
+          <div className="flex items-center gap-1 ml-3 flex-shrink-0">
             {isRunning && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => pause.execute()}
                 disabled={pause.isLoading}
+                className="h-7 px-2 text-xs"
               >
-                {pause.isLoading ? "⏸️..." : "⏸️ Pause"}
+                ⏸️
               </Button>
             )}
             {isPaused && (
@@ -99,108 +111,86 @@ export function AgentInteractionModal({
                 variant="outline"
                 onClick={() => resume.execute()}
                 disabled={resume.isLoading}
+                className="h-7 px-2 text-xs"
               >
-                {resume.isLoading ? "▶️..." : "▶️ Resume"}
+                ▶️
               </Button>
             )}
-            <Button size="sm" variant="outline" onClick={onClose}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onClose}
+              className="h-7 px-2 text-xs"
+            >
               ✕
             </Button>
           </div>
         </div>
 
-        {/* Status Bar */}
-        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  isRunning
-                    ? "bg-green-500 animate-pulse"
-                    : isPaused
-                    ? "bg-yellow-500"
-                    : "bg-gray-500"
-                }`}
-              />
-              <span className="font-medium capitalize">
-                {agent.lifecycleState}
-              </span>
-            </div>
-            <div className="text-gray-500 dark:text-gray-400">
-              {messages.length} messages
-            </div>
-            <div
-              className={`px-2 py-1 rounded text-xs font-medium ${
-                agent.toolPermissions.preset === "read-only"
-                  ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                  : agent.toolPermissions.preset === "standard"
-                  ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                  : agent.toolPermissions.preset === "full-access"
-                  ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
-                  : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-              }`}
-            >
-              {agent.toolPermissions.preset}
-            </div>
-          </div>
-        </div>
-
         {/* Messages Area */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-hidden px-3 py-2 flex flex-col">
           <AgentOutputStream messages={messages} />
         </div>
 
-        {/* Input Area */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-          {isPaused && (
-            <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                ⏸️ Agent is paused. Resume to continue interaction.
-              </p>
-            </div>
-          )}
+        {/* Collapsible Input Area */}
+        <div className="border-t border-gray-200 dark:border-gray-700">
+          {/* Collapse/Expand Button */}
+          <button
+            onClick={() => setIsInputCollapsed(!isInputCollapsed)}
+            className="w-full px-3 py-1 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors text-xs"
+          >
+            <span className="text-gray-500 dark:text-gray-400">
+              {isInputCollapsed ? "Show input" : "Hide input"}
+            </span>
+            <span className="text-gray-400">{isInputCollapsed ? "▲" : "▼"}</span>
+          </button>
 
-          {agent.lifecycleState === "stopped" && (
-            <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                🛑 Agent has been stopped. No further interaction possible.
-              </p>
-            </div>
-          )}
-
-          {(isRunning || isPaused) && (
-            <div className="space-y-2">
-              <Textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Send a follow-up message to the agent... (Cmd+Enter to send)"
-                rows={3}
-                disabled={!isRunning || isSending}
-                className="resize-none"
-              />
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Press Cmd+Enter to send
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => stop.execute()}
-                    disabled={stop.isLoading}
-                  >
-                    {stop.isLoading ? "🛑 Stopping..." : "🛑 Stop Agent"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleSendMessage}
-                    disabled={!input.trim() || !isRunning || isSending}
-                  >
-                    {isSending ? "Sending..." : "Send Message"}
-                  </Button>
+          {!isInputCollapsed && (
+            <div className="px-3 pb-3">
+              {isPaused && (
+                <div className="mb-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded text-xs text-yellow-800 dark:text-yellow-200">
+                  ⏸️ Agent is paused. Resume to continue.
                 </div>
-              </div>
+              )}
+
+              {agent.lifecycleState === "stopped" && (
+                <div className="mb-2 p-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-xs text-gray-600 dark:text-gray-400">
+                  🛑 Agent stopped. No further interaction possible.
+                </div>
+              )}
+
+              {(isRunning || isPaused) && (
+                <div className="space-y-2">
+                  <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Send message (Cmd+Enter)..."
+                    rows={2}
+                    disabled={!isRunning || isSending}
+                    className="resize-none text-sm"
+                  />
+                  <div className="flex items-center justify-end gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => stop.execute()}
+                      disabled={stop.isLoading}
+                      className="h-7 px-2 text-xs"
+                    >
+                      {stop.isLoading ? "🛑..." : "🛑 Stop"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSendMessage}
+                      disabled={!input.trim() || !isRunning || isSending}
+                      className="h-7 px-3 text-xs"
+                    >
+                      {isSending ? "..." : "Send"}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

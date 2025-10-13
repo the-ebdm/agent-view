@@ -48,10 +48,10 @@ function CollapsibleSection({
       <button
         type="button"
         onClick={onToggle}
-        className="w-full p-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+        className="w-full px-3 py-2 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
       >
-        <div className="flex items-center gap-3 flex-1">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+        <div className="flex items-center gap-2 flex-1">
+          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
             isComplete
               ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
               : isExpanded
@@ -60,16 +60,16 @@ function CollapsibleSection({
           }`}>
             {isComplete ? '✓' : number}
           </div>
-          <span className="text-xl">{icon}</span>
+          <span className="text-base">{icon}</span>
           <div className="flex-1 text-left">
-            <div className="font-semibold text-sm">{title}</div>
+            <div className="font-semibold text-xs">{title}</div>
             {subtitle && (
-              <div className="text-xs text-gray-500 dark:text-gray-400">{subtitle}</div>
+              <div className="text-[10px] text-gray-500 dark:text-gray-400">{subtitle}</div>
             )}
           </div>
         </div>
         <svg
-          className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+          className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -79,7 +79,7 @@ function CollapsibleSection({
       </button>
 
       {isExpanded && (
-        <div className="p-4 pt-0 border-t border-gray-100 dark:border-gray-800">
+        <div className="px-3 pb-2 pt-0 border-t border-gray-100 dark:border-gray-800">
           {children}
         </div>
       )}
@@ -318,27 +318,27 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header - Compact */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🚀</span>
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gradient-to-r from-blue-600 to-purple-600">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🚀</span>
             <div>
-              <h2 className="text-lg font-bold text-white">Spawn New Agent</h2>
-              <p className="text-xs text-blue-100">Configure and launch an AI agent</p>
+              <h2 className="text-base font-bold text-white">Spawn New Agent</h2>
+              <p className="text-[10px] text-blue-100">Configure and launch an AI agent</p>
             </div>
           </div>
           <button
             onClick={onClose}
             disabled={loading || showDangerousWarning}
-            className="text-white hover:bg-white/20 rounded-lg p-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-white hover:bg-white/20 rounded-lg p-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             title="Close (Esc)"
           >
-            <span className="text-xl">✕</span>
+            <span className="text-lg">✕</span>
           </button>
         </div>
 
         {/* Content - Scrollable */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-3">
             {/* Section 1: Quick Start */}
             <CollapsibleSection
               number={1}
@@ -349,13 +349,13 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
               onToggle={() => setExpandedSection(expandedSection === 1 ? 0 : 1)}
               isComplete={section1Complete}
             >
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {/* Tabs */}
-                <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700">
                   <button
                     type="button"
                     onClick={() => setActiveTab('templates')}
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 text-xs font-medium transition-all ${
                       activeTab === 'templates'
                         ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -366,7 +366,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                   <button
                     type="button"
                     onClick={() => setActiveTab('recent')}
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 text-xs font-medium transition-all ${
                       activeTab === 'recent'
                         ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -377,7 +377,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                   <button
                     type="button"
                     onClick={() => setActiveTab('saved')}
-                    className={`px-4 py-2 text-sm font-medium transition-all ${
+                    className={`px-3 py-1.5 text-xs font-medium transition-all ${
                       activeTab === 'saved'
                         ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
                         : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
@@ -388,9 +388,9 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                 </div>
 
                 {/* Tab Content */}
-                <div className="max-h-80 overflow-y-auto">
+                <div>
                   {activeTab === 'templates' && (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {/* Category Filter */}
                       <div className="flex gap-1 flex-wrap">
                         {categories.map((cat) => (
@@ -398,7 +398,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                             key={cat}
                             type="button"
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-3 py-1 text-xs rounded-full transition-all ${
+                            className={`px-2 py-0.5 text-[10px] rounded-full transition-all ${
                               selectedCategory === cat
                                 ? 'bg-blue-500 text-white'
                                 : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
@@ -410,28 +410,28 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                       </div>
 
                       {/* Templates */}
-                      <div className="grid grid-cols-1 gap-2">
+                      <div className="grid grid-cols-1 gap-1.5">
                         {filteredTemplates.map((template) => (
                           <button
                             key={template.id}
                             type="button"
                             onClick={() => handleLoadTemplate(template)}
-                            className={`group text-left p-3 rounded-lg border-2 transition-all ${
+                            className={`group text-left p-2 rounded-lg border-2 transition-all ${
                               selectedTemplate?.id === template.id
                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                                 : 'border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/10'
                             }`}
                           >
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">{template.icon}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg">{template.icon}</span>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-sm">{template.name}</span>
-                                  <Badge variant="secondary" className="text-xs shrink-0">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <span className="font-semibold text-xs">{template.name}</span>
+                                  <Badge variant="secondary" className="text-[10px] shrink-0 py-0 px-1">
                                     {template.toolPreset.replace('-', ' ')}
                                   </Badge>
                                 </div>
-                                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                <p className="text-[10px] text-gray-600 dark:text-gray-400 line-clamp-1">
                                   {template.description}
                                 </p>
                               </div>
@@ -443,9 +443,9 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                   )}
 
                   {activeTab === 'recent' && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {recentAgents.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500 dark:text-gray-400 text-sm">
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
                           No recent agents yet
                         </div>
                       ) : (
@@ -454,16 +454,16 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                             key={config.id}
                             type="button"
                             onClick={() => handleLoadConfig(config)}
-                            className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
+                            className="w-full text-left p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all"
                           >
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm truncate flex-1">{config.name}</span>
-                              <span className="text-xs text-gray-500">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="font-medium text-xs truncate flex-1">{config.name}</span>
+                              <span className="text-[10px] text-gray-500">
                                 {new Date(config.lastUsed || config.createdAt).toLocaleDateString()}
                               </span>
                             </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">{config.prompt}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-500 truncate mt-1">{config.directory}</p>
+                            <p className="text-[10px] text-gray-600 dark:text-gray-400 line-clamp-1">{config.prompt}</p>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-500 truncate mt-0.5">{config.directory}</p>
                           </button>
                         ))
                       )}
@@ -471,29 +471,29 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                   )}
 
                   {activeTab === 'saved' && (
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {savedConfigs.length === 0 ? (
-                        <div className="text-center py-12 text-gray-500 dark:text-gray-400 text-sm">
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
                           No saved configurations yet
                         </div>
                       ) : (
                         savedConfigs.map((config) => (
                           <div
                             key={config.id}
-                            className="flex items-center gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                            className="flex items-center gap-1.5 p-2 rounded-lg border border-gray-200 dark:border-gray-700"
                           >
                             <button
                               type="button"
                               onClick={() => handleLoadConfig(config)}
-                              className="flex-1 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 -m-3 p-3 rounded-lg transition-all"
+                              className="flex-1 text-left hover:bg-blue-50 dark:hover:bg-blue-900/20 -m-2 p-2 rounded-lg transition-all"
                             >
-                              <div className="font-medium text-sm mb-1">{config.name}</div>
-                              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1">{config.prompt}</p>
+                              <div className="font-medium text-xs mb-0.5">{config.name}</div>
+                              <p className="text-[10px] text-gray-600 dark:text-gray-400 line-clamp-1">{config.prompt}</p>
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteConfig(config.id)}
-                              className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                              className="text-red-500 hover:text-red-700 dark:hover:text-red-400 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded text-xs"
                               title="Delete"
                             >
                               🗑️
@@ -517,11 +517,11 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
               onToggle={() => setExpandedSection(expandedSection === 2 ? 0 : 2)}
               isComplete={section2Complete}
             >
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Agent Name */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Agent Name <span className="text-gray-400 text-xs">(optional)</span>
+                  <label htmlFor="name" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Agent Name <span className="text-gray-400 text-[10px]">(optional)</span>
                   </label>
                   <div className="flex gap-2">
                     <Input
@@ -547,7 +547,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
 
                 {/* Working Directory */}
                 <div>
-                  <label htmlFor="directory" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="directory" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Working Directory
                   </label>
                   <div className="flex gap-2">
@@ -558,7 +558,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                       onChange={(e) => setDirectory(e.target.value)}
                       placeholder="/path/to/directory"
                       disabled={loading}
-                      className="flex-1 font-mono text-sm"
+                      className="flex-1 font-mono text-xs"
                     />
                     <Button
                       type="button"
@@ -570,7 +570,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                     </Button>
                   </div>
                   {directory && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-[10px] text-gray-500 mt-0.5">
                       Agent will have access to files in this directory
                     </p>
                   )}
@@ -578,7 +578,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
 
                 {/* Agent Prompt */}
                 <div>
-                  <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label htmlFor="prompt" className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Agent Prompt
                   </label>
                   <Textarea
@@ -586,17 +586,17 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="What would you like the agent to do? Be specific about the task, expected outcomes, and any constraints."
-                    rows={6}
+                    rows={12}
                     disabled={loading}
                     error={error || undefined}
-                    className="font-mono text-sm"
+                    className="font-mono text-xs"
                   />
-                  <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-gray-500">
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className="text-[10px] text-gray-500">
                       {prompt.length > 0 && `${prompt.length} characters`}
                     </p>
                     {selectedTemplate && (
-                      <p className="text-xs text-blue-600 dark:text-blue-400">
+                      <p className="text-[10px] text-blue-600 dark:text-blue-400">
                         Using template: {selectedTemplate.name}
                       </p>
                     )}
@@ -615,16 +615,16 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
               onToggle={() => setExpandedSection(expandedSection === 3 ? 0 : 3)}
               isComplete={section3Complete}
             >
-              <div className="space-y-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
+              <div className="space-y-3">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-xs text-blue-800 dark:text-blue-200">
                     <strong>Security Note:</strong> Choose the minimum permissions needed for the task.
                     You can always grant more permissions later if needed.
                   </p>
                 </div>
 
                 {/* Preset Selector */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {(['read-only', 'standard', 'full-access', 'custom'] as ToolPermissionPreset[]).map((p) => {
                     const presetInfo = TOOL_PRESETS[p];
                     return (
@@ -636,30 +636,30 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                           setShowDangerousWarning(false);
                         }}
                         disabled={loading}
-                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                        className={`p-2 rounded-lg border-2 text-left transition-all ${
                           preset === p
                             ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 shadow-sm'
                             : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                         } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                         title={presetInfo.description}
                       >
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="text-2xl">
+                        <div className="flex items-start gap-1.5 mb-1">
+                          <span className="text-lg">
                             {p === 'read-only' && '🔒'}
                             {p === 'standard' && '🛡️'}
                             {p === 'full-access' && '⚠️'}
                             {p === 'custom' && '⚙️'}
                           </span>
                           <div className="flex-1">
-                            <div className="font-semibold text-sm capitalize mb-1">
+                            <div className="font-semibold text-xs capitalize mb-0.5">
                               {p.replace('-', ' ')}
                             </div>
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                            <p className="text-[10px] text-gray-600 dark:text-gray-400 line-clamp-2">
                               {presetInfo.description}
                             </p>
                           </div>
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-[10px] text-gray-500">
                           {presetInfo.tools.length} tool{presetInfo.tools.length !== 1 ? 's' : ''}
                         </div>
                       </button>
@@ -669,15 +669,15 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
 
                 {/* Custom Tool Selection */}
                 {preset === 'custom' && (
-                  <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Select Individual Tools:
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                       {ALL_TOOLS.map((tool) => (
                         <label
                           key={tool}
-                          className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded transition-all"
+                          className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-1.5 rounded transition-all"
                           title={TOOL_DESCRIPTIONS[tool]}
                         >
                           <input
@@ -687,11 +687,11 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                             disabled={loading}
                             className="rounded"
                           />
-                          <span className="text-sm flex-1">
+                          <span className="text-xs flex-1">
                             {tool}
                           </span>
                           {DANGEROUS_TOOLS.includes(tool) && (
-                            <span className="text-xs" title="Potentially dangerous">⚠️</span>
+                            <span className="text-[10px]" title="Potentially dangerous">⚠️</span>
                           )}
                         </label>
                       ))}
@@ -750,8 +750,8 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
         </form>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <div className="flex items-center justify-between gap-3">
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+          <div className="flex items-center justify-between gap-2">
             {/* Save Configuration */}
             <div className="flex-1">
               {!showSaveConfig ? (
@@ -759,17 +759,17 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                   type="button"
                   onClick={() => setShowSaveConfig(true)}
                   disabled={loading}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
                 >
                   💾 Save this configuration for later
                 </button>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <Input
                     placeholder="Configuration name"
                     value={configName}
                     onChange={(e) => setConfigName(e.target.value)}
-                    className="flex-1"
+                    className="flex-1 text-xs"
                     disabled={loading}
                   />
                   <Button
@@ -777,6 +777,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                     size="sm"
                     onClick={handleSaveConfig}
                     disabled={loading}
+                    className="text-xs px-2"
                   >
                     Save
                   </Button>
@@ -789,6 +790,7 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                       setConfigName('');
                     }}
                     disabled={loading}
+                    className="text-xs px-2"
                   >
                     Cancel
                   </Button>
@@ -803,8 +805,8 @@ export function AgentSpawnModal({ isOpen, onClose, onSpawn, defaultDirectory }: 
                 onClick={handleSubmit}
                 loading={loading}
                 disabled={loading || !section2Complete}
-                size="lg"
-                className="min-w-[140px]"
+                size="sm"
+                className="min-w-[120px] text-xs"
               >
                 {loading ? 'Spawning...' : '🚀 Spawn Agent'}
               </Button>

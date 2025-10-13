@@ -46,41 +46,33 @@ export function AgentOutputStream({ messages, autoScroll = true }: AgentOutputSt
   }
 
   return (
-    <Card
-      className="flex flex-col"
-      header={
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Agent Output</h2>
-          <span className="text-xs text-gray-500 dark:text-gray-400">
-            {messages.length} message{messages.length !== 1 ? 's' : ''}
-          </span>
-        </div>
-      }
+    <div
+      ref={containerRef}
+      onScroll={handleScroll}
+      className="space-y-2 overflow-y-auto flex-1"
     >
-      <div
-        ref={containerRef}
-        onScroll={handleScroll}
-        className="space-y-3 max-h-[600px] overflow-y-auto -m-6 p-6"
-      >
-        {groupMessages(messages).map((item, index) => (
-          <MessageItem key={index} item={item} />
-        ))}
-      </div>
-    </Card>
+      {groupMessages(messages).map((item, index) => (
+        <MessageItem key={index} item={item} />
+      ))}
+    </div>
   );
 }
 
 // Group tool_use messages with their corresponding tool_result
 type MessageGroup =
   | { type: 'single'; message: AgentMessage }
-  | { type: 'tool'; toolUse: AgentMessage; toolResult?: AgentMessage };
+  | { type: 'tool'; toolUse: AgentMessage; toolResult?: AgentMessage }
+  | { type: 'tool_group'; tools: Array<{ toolUse: AgentMessage; toolResult?: AgentMessage }> };
 
 function groupMessages(messages: AgentMessage[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
 
-  // First pass: collect all tool_use messages
+  // First pass: pair tool_use with tool_result
+  const pairedTools: Array<{ toolUse: AgentMessage; toolResult?: AgentMessage }> = [];
   const toolUseQueue: AgentMessage[] = [];
   const toolResultQueue: AgentMessage[] = [];
+
+  let currentToolGroup: Array<{ toolUse: AgentMessage; toolResult?: AgentMessage }> = [];
 
   for (const message of messages) {
     if (message.type === 'tool_use') {
@@ -94,11 +86,29 @@ function groupMessages(messages: AgentMessage[]): MessageGroup[] {
         const toolResult = toolResultQueue.shift();
 
         if (toolUse) {
-          groups.push({ type: 'tool', toolUse, toolResult });
+          currentToolGroup.push({ toolUse, toolResult });
         } else if (toolResult) {
-          // Orphaned result
+          // Orphaned result - add as single message
+          if (currentToolGroup.length > 0) {
+            if (currentToolGroup.length === 1) {
+              groups.push({ type: 'tool', ...currentToolGroup[0] });
+            } else {
+              groups.push({ type: 'tool_group', tools: currentToolGroup });
+            }
+            currentToolGroup = [];
+          }
           groups.push({ type: 'single', message: toolResult });
         }
+      }
+
+      // Flush the current tool group
+      if (currentToolGroup.length > 0) {
+        if (currentToolGroup.length === 1) {
+          groups.push({ type: 'tool', ...currentToolGroup[0] });
+        } else {
+          groups.push({ type: 'tool_group', tools: currentToolGroup });
+        }
+        currentToolGroup = [];
       }
 
       // Add the non-tool message
@@ -112,10 +122,27 @@ function groupMessages(messages: AgentMessage[]): MessageGroup[] {
     const toolResult = toolResultQueue.shift();
 
     if (toolUse) {
-      groups.push({ type: 'tool', toolUse, toolResult });
+      currentToolGroup.push({ toolUse, toolResult });
     } else if (toolResult) {
       // Orphaned result
+      if (currentToolGroup.length > 0) {
+        if (currentToolGroup.length === 1) {
+          groups.push({ type: 'tool', ...currentToolGroup[0] });
+        } else {
+          groups.push({ type: 'tool_group', tools: currentToolGroup });
+        }
+        currentToolGroup = [];
+      }
       groups.push({ type: 'single', message: toolResult });
+    }
+  }
+
+  // Flush the final tool group
+  if (currentToolGroup.length > 0) {
+    if (currentToolGroup.length === 1) {
+      groups.push({ type: 'tool', ...currentToolGroup[0] });
+    } else {
+      groups.push({ type: 'tool_group', tools: currentToolGroup });
     }
   }
 
@@ -129,7 +156,74 @@ function MessageItem({ item }: { item: MessageGroup }) {
     return <ToolCallItem toolUse={item.toolUse} toolResult={item.toolResult} isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} />;
   }
 
+  if (item.type === 'tool_group') {
+    return <ToolGroupItem tools={item.tools} isExpanded={isExpanded} onToggle={() => setIsExpanded(!isExpanded)} />;
+  }
+
   return <SingleMessageItem message={item.message} />;
+}
+
+function ToolGroupItem({
+  tools,
+  isExpanded,
+  onToggle
+}: {
+  tools: Array<{ toolUse: AgentMessage; toolResult?: AgentMessage }>;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
+  // Get unique tool names and counts
+  const toolCounts = tools.reduce((acc, { toolUse }) => {
+    const name = toolUse.toolName || 'Unknown';
+    acc[name] = (acc[name] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const toolSummary = Object.entries(toolCounts)
+    .map(([name, count]) => `${name} (${count})`)
+    .join(', ');
+
+  const firstTimestamp = tools[0]?.toolUse.timestamp;
+  const lastTimestamp = tools[tools.length - 1]?.toolUse.timestamp;
+
+  return (
+    <div className="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-200 dark:border-purple-700 border-t border-r border-b rounded transition-all hover:shadow-sm">
+      <button
+        onClick={onToggle}
+        className="w-full p-2 text-left flex items-center justify-between hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded transition-colors"
+      >
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className="text-sm">🔧</span>
+          <span className="font-mono text-xs text-purple-600 dark:text-purple-400 font-semibold">
+            {tools.length} tool call{tools.length !== 1 ? 's' : ''}
+          </span>
+          <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+            {toolSummary}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
+            {firstTimestamp && new Date(firstTimestamp).toLocaleTimeString()}
+          </span>
+          <span className="text-gray-500 dark:text-gray-400 text-xs">
+            {isExpanded ? '▼' : '▶'}
+          </span>
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="px-2 pb-2 space-y-1">
+          {tools.map((tool, idx) => (
+            <ToolCallItem
+              key={idx}
+              toolUse={tool.toolUse}
+              toolResult={tool.toolResult}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function ToolCallItem({
@@ -140,42 +234,46 @@ function ToolCallItem({
 }: {
   toolUse: AgentMessage;
   toolResult?: AgentMessage;
-  isExpanded: boolean;
-  onToggle: () => void;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }) {
+  const [localExpanded, setLocalExpanded] = useState(isExpanded ?? false);
+  const handleToggle = onToggle ?? (() => setLocalExpanded(!localExpanded));
+  const expanded = onToggle && isExpanded !== undefined ? isExpanded : localExpanded;
+
   return (
-    <div className="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-200 dark:border-purple-700 border-t border-r border-b rounded-lg transition-all hover:shadow-md">
+    <div className="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-200 dark:border-purple-700 border-t border-r border-b rounded transition-all hover:shadow-sm">
       <button
-        onClick={onToggle}
-        className="w-full p-3 text-left flex items-center justify-between hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded-lg transition-colors"
+        onClick={handleToggle}
+        className="w-full p-2 text-left flex items-center justify-between hover:bg-purple-100 dark:hover:bg-purple-900/40 rounded transition-colors"
       >
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-lg">🔧</span>
-          <span className="font-mono text-sm text-purple-600 dark:text-purple-400 font-semibold truncate">
+          <span className="text-sm">🔧</span>
+          <span className="font-mono text-xs text-purple-600 dark:text-purple-400 font-semibold truncate">
             {toolUse.toolName}
           </span>
           {toolResult && (
-            <span className="text-xs text-green-600 dark:text-green-400 ml-2">✓</span>
+            <span className="text-xs text-green-600 dark:text-green-400">✓</span>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
             {new Date(toolUse.timestamp).toLocaleTimeString()}
           </span>
-          <span className="text-gray-500 dark:text-gray-400">
-            {isExpanded ? '▼' : '▶'}
+          <span className="text-gray-500 dark:text-gray-400 text-xs">
+            {expanded ? '▼' : '▶'}
           </span>
         </div>
       </button>
 
-      {isExpanded && (
-        <div className="px-3 pb-3 space-y-3">
+      {expanded && (
+        <div className="px-2 pb-2 space-y-2">
           {toolUse.toolParams && (
             <div>
               <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
                 Parameters:
               </div>
-              <pre className="text-xs bg-black/10 dark:bg-white/10 p-2 rounded overflow-x-auto font-mono">
+              <pre className="text-xs bg-black/10 dark:bg-white/10 p-1.5 rounded overflow-x-auto font-mono">
                 {JSON.stringify(toolUse.toolParams, null, 2)}
               </pre>
             </div>
@@ -186,7 +284,7 @@ function ToolCallItem({
               <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
                 Result:
               </div>
-              <pre className="text-xs bg-green-50 dark:bg-green-900/20 p-2 rounded overflow-x-auto font-mono max-h-48 overflow-y-auto">
+              <pre className="text-xs bg-green-50 dark:bg-green-900/20 p-1.5 rounded overflow-x-auto font-mono max-h-32 overflow-y-auto">
                 {typeof toolResult.content === 'string'
                   ? toolResult.content
                   : JSON.stringify(toolResult.content, null, 2)}
@@ -225,18 +323,18 @@ function SingleMessageItem({ message }: { message: AgentMessage }) {
   };
 
   return (
-    <div className={`p-4 rounded-lg border-l-4 border-t border-r border-b ${typeColors[message.type]} transition-all hover:shadow-md`}>
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{typeIcons[message.type]}</span>
-          <span className="text-sm font-semibold">{typeLabels[message.type]}</span>
+    <div className={`p-2 rounded border-l-4 border-t border-r border-b ${typeColors[message.type]} transition-all hover:shadow-sm`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm">{typeIcons[message.type]}</span>
+          <span className="text-xs font-semibold">{typeLabels[message.type]}</span>
         </div>
         <span className="text-xs font-mono text-gray-500 dark:text-gray-400">
           {new Date(message.timestamp).toLocaleTimeString()}
         </span>
       </div>
 
-      <div className="prose prose-sm dark:prose-invert max-w-none">
+      <div className="prose prose-sm dark:prose-invert max-w-none text-sm">
         {message.type === 'assistant' ? (
           <ReactMarkdown
             components={{
@@ -271,7 +369,7 @@ function SingleMessageItem({ message }: { message: AgentMessage }) {
               : JSON.stringify(message.content, null, 2)}
           </ReactMarkdown>
         ) : (
-          <p className="whitespace-pre-wrap">
+          <p className="whitespace-pre-wrap text-xs">
             {typeof message.content === 'string'
               ? message.content
               : JSON.stringify(message.content, null, 2)}
