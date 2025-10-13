@@ -126,8 +126,18 @@ async function syncSpecs(
     // Process each spec
     for (const fsSpec of fsSpecs) {
       try {
-        // Read spec content
-        const content = await readOpenSpecFile(fsSpec.path);
+        // Read spec content (strip 'openspec/' prefix if present)
+        const specPath = fsSpec.path.replace(/^openspec\//, '');
+
+        // Check if file exists before trying to read it
+        // Some specs may only exist in change subdirectories
+        const fileExists = await exists(specPath);
+        if (!fileExists) {
+          console.log(`[OpenSpecSync] Skipping spec ${fsSpec.id}: file not found at ${specPath}`);
+          continue; // Skip this spec without treating it as an error
+        }
+
+        const content = await readOpenSpecFile(specPath);
 
         // Parse content for requirement/scenario counts
         const parsed = parseSpecMarkdown(content);
@@ -203,10 +213,11 @@ async function syncChanges(
         const updatedAt = await getDirectoryTimestamp(fsChange.path);
         const createdAt = await getGitCreationTimestamp(fsChange.path);
 
-        // Read change files
-        const proposalPath = path.join(fsChange.path, 'proposal.md');
-        const designPath = path.join(fsChange.path, 'design.md');
-        const tasksPath = path.join(fsChange.path, 'tasks.md');
+        // Read change files (strip 'openspec/' prefix if present, as readOpenSpecFile adds it)
+        const changePath = fsChange.path.replace(/^openspec\//, '');
+        const proposalPath = path.join(changePath, 'proposal.md');
+        const designPath = path.join(changePath, 'design.md');
+        const tasksPath = path.join(changePath, 'tasks.md');
 
         let proposalContent: string | undefined;
         let designContent: string | undefined;

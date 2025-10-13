@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import { ProjectsDashboard } from '@/components/features/projects-dashboard';
 import { HelpModal } from '@/components/features/help-modal';
+import { OpenSpecSyncStatus } from '@/components/openspec/openspec-sync-status';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -182,7 +183,7 @@ export default function Home() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-20">
         {/* Page Title */}
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Projects</h2>
@@ -216,6 +217,21 @@ export default function Home() {
 
       {/* Help Modal */}
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+
+      {/* Footer with OpenSpec Sync Status */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-2 shadow-sm">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              OpenSpec Database:
+            </span>
+            <OpenSpecSyncStatus />
+          </div>
+          <div className="text-xs text-gray-400 dark:text-gray-500">
+            Agent View v1.0
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

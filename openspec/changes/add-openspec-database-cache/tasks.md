@@ -18,8 +18,9 @@
 - [x] 2.3 Implement getDirectoryTimestamp(dirPath) function (git-utils.ts:51-73)
 - [x] 2.4 Add timeout protection (2000ms) for git commands (git-utils.ts:12,28,58)
 - [x] 2.5 Add error handling and fallback to fs.stat().mtime (git-utils.ts:40-43,131-140)
-- [ ] 2.6 Add tests for git timestamp extraction
-- [ ] 2.7 Test with committed and uncommitted files
+- [x] 2.6 Add file existence check to skip missing specs (sync.ts:134-138)
+- [ ] 2.7 Add tests for git timestamp extraction
+- [ ] 2.8 Test with committed and uncommitted files
 
 ## 3. OpenSpec Repository
 
@@ -44,9 +45,10 @@
 - [x] 4.6 Implement entity removal detection (delete from DB if file missing) (sync.ts:169-176,292-299,358-365)
 - [x] 4.7 Add sync statistics tracking (added, updated, removed, errors) (sync.ts:17-26,86-94)
 - [x] 4.8 Add concurrent sync protection (lock mechanism) (sync.ts:37,47-59,109)
-- [ ] 4.9 Add incremental sync optimization (mtime checks) - has force option but no mtime optimization
-- [ ] 4.10 Test full sync with realistic OpenSpec directory
-- [ ] 4.11 Test incremental sync performance
+- [x] 4.9 Fix path prefix duplication issue (strip 'openspec/' prefix before readOpenSpecFile) (sync.ts:130,207)
+- [ ] 4.10 Add incremental sync optimization (mtime checks) - has force option but no mtime optimization
+- [ ] 4.11 Test full sync with realistic OpenSpec directory
+- [ ] 4.12 Test incremental sync performance
 
 ## 5. Startup Sync Integration
 
