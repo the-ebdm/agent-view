@@ -36,6 +36,10 @@ export function ApprovalsProvider({ children }: { children: React.ReactNode }) {
   const [approvalsMap, setApprovalsMap] = useState<Map<string, AgentApprovals>>(new Map());
   const [activeAgents, setActiveAgents] = useState<Set<string>>(new Set());
 
+  // Use refs to avoid recreating functions and breaking effect dependencies
+  const approvalsMapRef = React.useRef(approvalsMap);
+  approvalsMapRef.current = approvalsMap;
+
   // Fetch approvals for a specific agent
   const fetchApprovals = useCallback(async (agentId: string): Promise<AgentApprovals> => {
     try {
@@ -73,17 +77,11 @@ export function ApprovalsProvider({ children }: { children: React.ReactNode }) {
   }, [fetchApprovals]);
 
   // Get approvals for a specific agent
+  // CRITICAL: This function must be stable (no dependencies on state that changes)
+  // to avoid infinite re-render loops
   const getApprovals = useCallback((agentId: string): AgentApprovals | undefined => {
-    const data = approvalsMap.get(agentId);
-
-    // If data doesn't exist or is stale, trigger a refresh
-    if (!data || (Date.now() - data.lastFetched) > MAX_AGE) {
-      // Trigger async refresh (don't block)
-      refreshApprovals(agentId);
-    }
-
-    return data;
-  }, [approvalsMap, refreshApprovals]);
+    return approvalsMapRef.current.get(agentId);
+  }, []);
 
   // Clear approvals for a specific agent (when agent is removed)
   const clearApprovals = useCallback((agentId: string) => {
@@ -145,7 +143,8 @@ export function useApprovals(agentId: string) {
     // Initial fetch
     context.refreshApprovals(agentId);
 
-    // Subscribe to updates
+    // Subscribe to updates by checking context periodically
+    // Note: getApprovals is now stable and won't cause infinite loops
     const interval = setInterval(() => {
       const data = context.getApprovals(agentId);
       setApprovals(data);
@@ -154,13 +153,7 @@ export function useApprovals(agentId: string) {
     return () => {
       clearInterval(interval);
     };
-  }, [agentId, context]);
-
-  // Also update immediately when context data changes
-  useEffect(() => {
-    const data = context.getApprovals(agentId);
-    setApprovals(data);
-  }, [agentId, context]);
+  }, [agentId, context.getApprovals, context.refreshApprovals]);
 
   return {
     approvalCount: approvals?.count || 0,

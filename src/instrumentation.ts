@@ -15,6 +15,11 @@ export async function register() {
     try {
       await initializeDatabase();
       console.log('[Instrumentation] Database initialized successfully');
+
+      // Hydrate session manager with active agents from database
+      const { sessionManager } = await import('./lib/agent-session-manager');
+      sessionManager.hydrateFromDatabase();
+      console.log('[Instrumentation] Session manager hydrated from database');
     } catch (error) {
       console.error('[Instrumentation] Failed to initialize database:', error);
       // Don't throw - allow server to start even if database fails

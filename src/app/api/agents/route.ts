@@ -7,7 +7,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const statusFilter = searchParams.get('status');
 
-    let agents = sessionManager.getAllActiveAgents();
+    // Load agents from database (hydrate if not already done)
+    // This ensures agents persisted to the database are shown even after server restart
+    let agents = sessionManager.getAllActiveAgents(true);
 
     // Filter by status if provided
     if (statusFilter) {

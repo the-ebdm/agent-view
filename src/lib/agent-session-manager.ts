@@ -11,6 +11,7 @@ class AgentSessionManager {
   // Phase 2: Remove single-agent enforcement
   private activeAgents: Map<string, AgentSession> = new Map(); // Track concurrent agents
   private readonly MAX_HISTORY = 10;
+  private isHydrated = false;
 
   /**
    * Phase 2: Create session with multi-agent support
@@ -103,9 +104,43 @@ class AgentSessionManager {
   }
 
   /**
-   * Phase 2: Get all active agents (running or paused)
+   * Load active agents from database on startup
+   * Should be called once during server initialization
    */
-  getAllActiveAgents(): AgentSession[] {
+  hydrateFromDatabase(): void {
+    if (this.isHydrated || !isPersistenceEnabled()) {
+      return;
+    }
+
+    try {
+      const agentsRepo = getAgentsRepository();
+      const dbAgents = agentsRepo.findActive();
+
+      console.log(`[AgentSessionManager] Hydrating ${dbAgents.length} active agents from database`);
+
+      for (const agent of dbAgents) {
+        // Add to both sessions and activeAgents maps
+        this.sessions.set(agent.id, agent);
+        this.activeAgents.set(agent.id, agent);
+      }
+
+      this.isHydrated = true;
+    } catch (error) {
+      console.error('[AgentSessionManager] Failed to hydrate from database:', error);
+      // Continue - graceful degradation
+    }
+  }
+
+  /**
+   * Phase 2: Get all active agents (running or paused)
+   * Optionally includes agents from database if not yet hydrated
+   */
+  getAllActiveAgents(includeDatabase = false): AgentSession[] {
+    // Hydrate from database if needed
+    if (includeDatabase && !this.isHydrated && isPersistenceEnabled()) {
+      this.hydrateFromDatabase();
+    }
+
     return Array.from(this.activeAgents.values());
   }
 
@@ -384,6 +419,27 @@ class AgentSessionManager {
 
   /**
    * Add a pending approval request for an agent
+   *
+   * Creates a new approval record when an agent requests to use a tool
+   * that's outside its granted permissions. The approval is stored in the
+   * agent's session state and can be retrieved via getPendingApprovals().
+   *
+   * @param agentId - The ID of the agent requesting permission
+   * @param toolName - Name of the tool being requested (e.g., "Write", "Edit", "Bash")
+   * @param description - Human-readable description of the action (e.g., "Write to file.txt")
+   * @param params - Tool-specific parameters (e.g., file_path, command)
+   * @returns Unique approval ID that can be used to approve/deny the request
+   * @throws Error if agent is not found
+   *
+   * @example
+   * ```typescript
+   * const approvalId = sessionManager.addPendingApproval(
+   *   "agent_123",
+   *   "Write",
+   *   "Write to config.json",
+   *   { file_path: "/path/to/config.json", content: "..." }
+   * );
+   * ```
    */
   addPendingApproval(
     agentId: string,
@@ -417,6 +473,18 @@ class AgentSessionManager {
 
   /**
    * Get all pending approvals for an agent
+   *
+   * Returns the list of tool permission requests that are currently awaiting
+   * user approval. This list is typically displayed in the approval drawer UI.
+   *
+   * @param agentId - The ID of the agent to fetch approvals for
+   * @returns Array of pending approval records, or empty array if none pending
+   *
+   * @example
+   * ```typescript
+   * const approvals = sessionManager.getPendingApprovals("agent_123");
+   * console.log(`Agent has ${approvals.length} pending approvals`);
+   * ```
    */
   getPendingApprovals(agentId: string): PendingApproval[] {
     const session = this.sessions.get(agentId);
@@ -425,6 +493,21 @@ class AgentSessionManager {
 
   /**
    * Approve a pending approval request
+   *
+   * Grants permission for the agent to use the requested tool. This removes
+   * the approval from the pending list and signals the execution manager to
+   * resume the agent's execution with the tool allowed.
+   *
+   * @param agentId - The ID of the agent that made the request
+   * @param approvalId - The unique ID of the approval request to approve
+   * @throws Error if agent or approval is not found
+   *
+   * @example
+   * ```typescript
+   * // User clicks "Approve" button in UI
+   * sessionManager.approveRequest("agent_123", "approval_1234567890_abc");
+   * // Agent continues execution with tool permission granted
+   * ```
    */
   approveRequest(agentId: string, approvalId: string): void {
     const session = this.sessions.get(agentId);

@@ -3,17 +3,17 @@
  * UI buttons for executing OpenSpec slash commands (proposal, apply, archive)
  */
 
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   buildApplyChangePrompt,
   buildProposalPrompt,
   buildArchivePrompt,
   type OpenSpecChangeContext,
-} from '@/lib/openspec/prompt-builder';
+} from "@/lib/openspec/prompt-builder";
 
-type CommandType = 'proposal' | 'apply' | 'archive';
+type CommandType = "proposal" | "apply" | "archive";
 
 interface SlashCommandButtonProps {
   command: CommandType;
@@ -21,7 +21,7 @@ interface SlashCommandButtonProps {
   onSuccess?: (output: string) => void;
   onError?: (error: string) => void;
   className?: string;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: "primary" | "secondary" | "danger";
   disabled?: boolean;
   children?: React.ReactNode;
   // OpenSpec context for enriched prompts (apply command)
@@ -29,33 +29,36 @@ interface SlashCommandButtonProps {
   projectDirectory?: string;
 }
 
-const COMMAND_CONFIG: Record<CommandType, {
-  label: string;
-  icon: string;
-  description: string;
-  promptLabel: string;
-  placeholder: string;
-}> = {
+const COMMAND_CONFIG: Record<
+  CommandType,
+  {
+    label: string;
+    icon: string;
+    description: string;
+    promptLabel: string;
+    placeholder: string;
+  }
+> = {
   proposal: {
-    label: 'New Proposal',
-    icon: '📝',
-    description: 'Create a new OpenSpec change proposal',
-    promptLabel: 'Change ID',
-    placeholder: 'e.g., add-new-feature',
+    label: "New Proposal",
+    icon: "📝",
+    description: "Create a new OpenSpec change proposal",
+    promptLabel: "Change ID",
+    placeholder: "e.g., add-new-feature",
   },
   apply: {
-    label: 'Apply Change',
-    icon: '⚡',
-    description: 'Apply an OpenSpec change proposal',
-    promptLabel: 'Change ID',
-    placeholder: 'e.g., add-new-feature',
+    label: "Apply Change",
+    icon: "⚡",
+    description: "Apply an OpenSpec change proposal",
+    promptLabel: "Change ID",
+    placeholder: "e.g., add-new-feature",
   },
   archive: {
-    label: 'Archive Change',
-    icon: '📦',
-    description: 'Archive a completed change',
-    promptLabel: 'Change ID',
-    placeholder: 'e.g., add-new-feature',
+    label: "Archive Change",
+    icon: "📦",
+    description: "Archive a completed change",
+    promptLabel: "Change ID",
+    placeholder: "e.g., add-new-feature",
   },
 };
 
@@ -64,15 +67,15 @@ export function SlashCommandButton({
   changeId: providedChangeId,
   onSuccess,
   onError,
-  className = '',
-  variant = 'primary',
+  className = "",
+  variant = "primary",
   disabled = false,
   children,
   changeContext,
   projectDirectory,
 }: SlashCommandButtonProps) {
   const [showDialog, setShowDialog] = useState(false);
-  const [changeId, setChangeId] = useState('');
+  const [changeId, setChangeId] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +94,7 @@ export function SlashCommandButton({
     } else {
       // Show dialog to get changeId
       setShowDialog(true);
-      setChangeId('');
+      setChangeId("");
       setOutput(null);
       setError(null);
     }
@@ -106,7 +109,7 @@ export function SlashCommandButton({
     try {
       await spawnOpenSpecAgent(id);
     } catch (err: any) {
-      const errorText = err.message || 'Failed to spawn agent';
+      const errorText = err.message || "Failed to spawn agent";
       setError(errorText);
       onError?.(errorText);
     } finally {
@@ -122,12 +125,12 @@ export function SlashCommandButton({
 
       // Build prompt based on command type
       switch (command) {
-        case 'proposal':
+        case "proposal":
           prompt = buildProposalPrompt(id, projectDirectory);
           agentName = `Proposal - ${id}`;
           break;
 
-        case 'apply':
+        case "apply":
           // Use provided context or create minimal context
           const context: OpenSpecChangeContext = changeContext || {
             changeId: id,
@@ -137,7 +140,7 @@ export function SlashCommandButton({
           agentName = `Apply - ${context.name}`;
           break;
 
-        case 'archive':
+        case "archive":
           prompt = buildArchivePrompt(id, projectDirectory, skipSpecs, autoYes);
           agentName = `Archive - ${id}`;
           break;
@@ -147,21 +150,21 @@ export function SlashCommandButton({
       }
 
       // Spawn new agent
-      const response = await fetch('/api/agents/spawn', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/agents/spawn", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: agentName,
           prompt,
           directory: projectDirectory || process.cwd(),
           toolPermissions: {
-            preset: 'standard',
+            preset: command === "apply" ? "full-access" : "standard",
           },
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to spawn agent');
+        throw new Error("Failed to spawn agent");
       }
 
       const { id: agentId, name } = await response.json();
@@ -170,14 +173,17 @@ export function SlashCommandButton({
       let successMessage = `✓ Agent "${name}" spawned successfully!\n\nAgent ID: ${agentId}\n\n`;
 
       switch (command) {
-        case 'proposal':
-          successMessage += 'The agent will create a new OpenSpec change proposal.\nYou can monitor progress in the main dashboard.';
+        case "proposal":
+          successMessage +=
+            "The agent will create a new OpenSpec change proposal.\nYou can monitor progress in the main dashboard.";
           break;
-        case 'apply':
-          successMessage += 'The agent will implement the change according to the approved proposal.\nYou can monitor progress in the main dashboard.';
+        case "apply":
+          successMessage +=
+            "The agent will implement the change according to the approved proposal.\nYou can monitor progress in the main dashboard.";
           break;
-        case 'archive':
-          successMessage += 'The agent will archive the completed change.\nYou can monitor progress in the main dashboard.';
+        case "archive":
+          successMessage +=
+            "The agent will archive the completed change.\nYou can monitor progress in the main dashboard.";
           break;
       }
 
@@ -188,7 +194,6 @@ export function SlashCommandButton({
       setTimeout(() => {
         setShowDialog(false);
       }, 3000);
-
     } catch (err: any) {
       throw err;
     }
@@ -199,13 +204,15 @@ export function SlashCommandButton({
     e.preventDefault();
 
     if (!changeId.trim()) {
-      setError('Change ID is required');
+      setError("Change ID is required");
       return;
     }
 
     // Validate change ID format
     if (!/^[a-zA-Z0-9_-]+$/.test(changeId)) {
-      setError('Change ID can only contain letters, numbers, hyphens, and underscores');
+      setError(
+        "Change ID can only contain letters, numbers, hyphens, and underscores"
+      );
       return;
     }
 
@@ -214,9 +221,10 @@ export function SlashCommandButton({
 
   // Button variants
   const variantClasses = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white',
-    secondary: 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200',
-    danger: 'bg-red-600 hover:bg-red-700 text-white',
+    primary: "bg-blue-600 hover:bg-blue-700 text-white",
+    secondary:
+      "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200",
+    danger: "bg-red-600 hover:bg-red-700 text-white",
   };
 
   return (
@@ -269,7 +277,7 @@ export function SlashCommandButton({
               </div>
 
               {/* Archive-specific options */}
-              {command === 'archive' && (
+              {command === "archive" && (
                 <div className="mb-4 space-y-2">
                   <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                     <input
@@ -332,7 +340,7 @@ export function SlashCommandButton({
                       <span>Executing...</span>
                     </span>
                   ) : (
-                    'Execute'
+                    "Execute"
                   )}
                 </button>
               </div>
@@ -347,14 +355,20 @@ export function SlashCommandButton({
 /**
  * Quick action buttons for common commands
  */
-export function NewProposalButton(props: Omit<SlashCommandButtonProps, 'command'>) {
+export function NewProposalButton(
+  props: Omit<SlashCommandButtonProps, "command">
+) {
   return <SlashCommandButton command="proposal" variant="primary" {...props} />;
 }
 
-export function ApplyChangeButton(props: Omit<SlashCommandButtonProps, 'command'>) {
+export function ApplyChangeButton(
+  props: Omit<SlashCommandButtonProps, "command">
+) {
   return <SlashCommandButton command="apply" variant="primary" {...props} />;
 }
 
-export function ArchiveChangeButton(props: Omit<SlashCommandButtonProps, 'command'>) {
+export function ArchiveChangeButton(
+  props: Omit<SlashCommandButtonProps, "command">
+) {
   return <SlashCommandButton command="archive" variant="danger" {...props} />;
 }
