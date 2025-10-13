@@ -228,7 +228,7 @@ Agent requests tool → SDK calls canUseTool() → Check permissions
 
 This task would add approval requests to the message history stream for better visibility, but the approval drawer already provides this information. Can be implemented as a future enhancement if users request it.
 
-- [ ] Consider storing approval request as a special message type
+- [x] Consider storing approval request as a special message type
   - Add `'approval_request'` to `MessageType` union
   - Display approval requests in agent output stream
 - [ ] Add approval decision messages
