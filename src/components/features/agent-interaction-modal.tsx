@@ -12,16 +12,19 @@ import type { AgentSession } from "@/types/agent";
 interface AgentInteractionModalProps {
   agent: AgentSession;
   onClose: () => void;
+  onOpenApprovals?: () => void;
 }
 
 export function AgentInteractionModal({
   agent,
   onClose,
+  onOpenApprovals,
 }: AgentInteractionModalProps) {
   const { messages, status } = useAgentStream(agent.id);
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [approvalCount, setApprovalCount] = useState(0);
   const [isInputCollapsed, setIsInputCollapsed] = useState(() => {
     // Load from localStorage on mount
     if (typeof window !== 'undefined') {
@@ -31,6 +34,26 @@ export function AgentInteractionModal({
     return false;
   });
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // Fetch pending approvals count
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        const response = await fetch(`/api/agents/${agent.id}/approvals`);
+        if (response.ok) {
+          const data = await response.json();
+          setApprovalCount(data.count || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching approvals:', error);
+      }
+    };
+
+    fetchApprovals();
+    // Poll for updates
+    const interval = setInterval(fetchApprovals, 3000);
+    return () => clearInterval(interval);
+  }, [agent.id]);
 
   // Save to localStorage when state changes
   useEffect(() => {
@@ -140,6 +163,34 @@ export function AgentInteractionModal({
             </Button>
           </div>
         </div>
+
+        {/* Approval Alert Banner */}
+        {approvalCount > 0 && (
+          <div
+            className="mx-3 mt-2 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenApprovals?.();
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-orange-600 dark:text-orange-400 text-xl">⚠️</span>
+                <div>
+                  <div className="text-sm font-semibold text-orange-800 dark:text-orange-200">
+                    {approvalCount} permission{approvalCount !== 1 ? 's' : ''} pending
+                  </div>
+                  <div className="text-xs text-orange-600 dark:text-orange-400">
+                    Click to review and approve/deny
+                  </div>
+                </div>
+              </div>
+              <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                Click to review →
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Messages Area */}
         <div className="flex-1 overflow-hidden px-3 py-2 flex flex-col">

@@ -11,7 +11,7 @@ import { getDatabase } from './client';
 /**
  * Current schema version
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 /**
  * Initialize database schema
@@ -244,6 +244,78 @@ function migrateV1toV2(db: Database.Database): void {
 }
 
 /**
+ * Migrate from schema version 2 to version 3
+ * Adds OpenSpec cache tables (specs, changes, archives)
+ */
+function migrateV2toV3(db: Database.Database): void {
+  console.log('[Schema] Migrating schema from version 2 to 3...');
+
+  // Create openspec_specs table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS openspec_specs (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      content TEXT NOT NULL,
+      requirement_count INTEGER NOT NULL DEFAULT 0,
+      scenario_count INTEGER NOT NULL DEFAULT 0,
+      git_sha TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      last_synced_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_specs_updated_at ON openspec_specs(updated_at DESC);
+  `);
+
+  // Create openspec_changes table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS openspec_changes (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('pending', 'in_progress', 'completed')),
+      validation_status TEXT NOT NULL CHECK(validation_status IN ('pending', 'validating', 'valid', 'invalid')),
+      validation_errors TEXT,
+      task_count INTEGER NOT NULL DEFAULT 0,
+      completed_task_count INTEGER NOT NULL DEFAULT 0,
+      progress_percentage INTEGER NOT NULL DEFAULT 0,
+      proposal_content TEXT,
+      design_content TEXT,
+      tasks_content TEXT,
+      git_sha TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      last_synced_at INTEGER NOT NULL,
+      is_favorite INTEGER NOT NULL DEFAULT 0,
+      tags TEXT
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_changes_status ON openspec_changes(status);
+    CREATE INDEX IF NOT EXISTS idx_changes_updated_at ON openspec_changes(updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_changes_favorite ON openspec_changes(is_favorite DESC, updated_at DESC);
+  `);
+
+  // Create openspec_archives table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS openspec_archives (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      path TEXT NOT NULL,
+      archived_at INTEGER NOT NULL,
+      git_sha TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      last_synced_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_archives_archived_at ON openspec_archives(archived_at DESC);
+  `);
+
+  console.log('[Schema] Migration to version 3 complete');
+}
+
+/**
  * Run database migrations
  * Applies incremental schema changes from currentVersion to CURRENT_SCHEMA_VERSION
  */
@@ -252,8 +324,8 @@ function runMigrations(db: Database.Database, fromVersion: number): void {
 
   const migrations: Array<(db: Database.Database) => void> = [
     migrateV1toV2,
+    migrateV2toV3,
     // Add future migrations here
-    // migrateV2toV3,
   ];
 
   // Run migrations sequentially
@@ -290,6 +362,9 @@ export function dropAllTables(): void {
     DROP TABLE IF EXISTS worktrees;
     DROP TABLE IF EXISTS projects;
     DROP TABLE IF EXISTS agent_configs;
+    DROP TABLE IF EXISTS openspec_specs;
+    DROP TABLE IF EXISTS openspec_changes;
+    DROP TABLE IF EXISTS openspec_archives;
     DROP TABLE IF EXISTS settings;
   `);
 

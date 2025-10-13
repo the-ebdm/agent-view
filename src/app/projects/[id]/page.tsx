@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { ActiveAgentsDashboard } from '@/components/features/active-agents-dashboard';
 import { AgentSpawnModal } from '@/components/features/agent-spawn-modal';
 import { AgentHistoryList } from '@/components/features/agent-history-list';
+import { AgentHistoryModal } from '@/components/features/agent-history-modal';
 import { OpenSpecSection } from '@/components/openspec/openspec-section';
 import { HelpModal } from '@/components/features/help-modal';
 import { useAgentHistory } from '@/hooks/use-agent-history';
@@ -31,6 +32,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const [activeTab, setActiveTab] = useState('agents');
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<string | null>(null);
 
   // Fetch project details
   useEffect(() => {
@@ -281,9 +283,9 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
                     </div>
                     <AgentHistoryList
                       history={projectHistory}
-                      selectedId={null}
+                      selectedId={selectedHistoryItem}
                       onSelect={(id) => {
-                        console.log('Selected history item:', id);
+                        setSelectedHistoryItem(id);
                       }}
                     />
                   </div>
@@ -340,6 +342,14 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
         onSpawn={handleSpawnComplete}
         defaultDirectory={project.directory}
       />
+
+      {/* History Detail Modal */}
+      {selectedHistoryItem && (
+        <AgentHistoryModal
+          historyItem={projectHistory.find(item => item.id === selectedHistoryItem)!}
+          onClose={() => setSelectedHistoryItem(null)}
+        />
+      )}
     </div>
   );
 }

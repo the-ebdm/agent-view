@@ -117,6 +117,7 @@ export function ActiveAgentsDashboard() {
         <AgentInteractionModal
           agent={selectedAgent}
           onClose={() => setSelectedAgentId(null)}
+          onOpenApprovals={() => setApprovalDrawerAgentId(selectedAgent.id)}
         />
       )}
 

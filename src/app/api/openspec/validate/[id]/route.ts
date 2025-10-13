@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { validateChange } from '@/lib/openspec/cli-wrapper';
+import { getOpenSpecRepository } from '@/lib/database/repositories/openspec';
 import crypto from 'crypto';
 
 // In-memory cache for validation results (30s TTL)
@@ -157,6 +158,21 @@ export async function POST(
       timestamp: validationResult.timestamp,
       cached: false,
     };
+
+    // Store validation result in database
+    try {
+      const repo = getOpenSpecRepository();
+      const validationStatus = validationResult.valid ? 'valid' : 'invalid';
+      const validationErrors = validationResult.errors.length > 0
+        ? JSON.stringify(validationResult.errors.map(e => e.message))
+        : null;
+
+      repo.updateChangeValidation(id, validationStatus as any, validationErrors || undefined);
+      console.log(`[Validation API] Stored validation result for ${id}: ${validationStatus}`);
+    } catch (dbError) {
+      console.warn('[Validation API] Failed to store validation result in database:', dbError);
+      // Non-fatal - continue with response
+    }
 
     // Cache result if content hash provided
     if (contentHash) {

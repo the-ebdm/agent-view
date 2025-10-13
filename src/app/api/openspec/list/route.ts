@@ -1,52 +1,61 @@
 /**
  * OpenSpec List API Route
  * GET /api/openspec/list - List all OpenSpec entities (specs, changes, archives)
+ *
+ * Now powered by database cache with automatic staleness detection
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { listSpecs, listChanges, listArchives } from '@/lib/openspec/cli-wrapper';
+import { getOpenSpecRepository } from '@/lib/database/repositories/openspec';
+import { syncFromFilesystem, needsSync, getSyncStatus } from '@/lib/openspec/sync';
 import type { ListEntitiesResponse } from '@/types/openspec';
-
-// Cache configuration (30s TTL)
-let cachedData: ListEntitiesResponse | null = null;
-let cacheTime: number = 0;
-const CACHE_TTL = 30000; // 30 seconds
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'spec' | 'change' | 'archive' | null
     const useCache = searchParams.get('cache') !== 'false';
-    const directory = searchParams.get('directory'); // Project directory to scan
+    const forceSync = searchParams.get('sync') === 'true';
 
-    // Check cache (cache key includes directory)
-    const cacheKey = directory || 'default';
-    const now = Date.now();
-    if (useCache && cachedData && now - cacheTime < CACHE_TTL) {
-      return NextResponse.json(filterByType(cachedData, type));
+    // Get repository instance
+    const repo = getOpenSpecRepository();
+
+    // Check if database needs sync or forced sync requested
+    if (forceSync || (useCache && needsSync())) {
+      console.log('[OpenSpec API] Database is stale or sync forced, triggering sync...');
+      try {
+        await syncFromFilesystem();
+      } catch (syncError) {
+        console.error('[OpenSpec API] Sync failed, falling back to filesystem:', syncError);
+        return await fallbackToFilesystem(type);
+      }
     }
 
-    // Fetch all entities in parallel
-    const [specs, changes, archives] = await Promise.all([
-      listSpecs(directory || undefined),
-      listChanges(directory || undefined),
-      listArchives(directory || undefined),
-    ]);
+    // Query database (fast!)
+    try {
+      const [specs, changes, archives] = await Promise.all([
+        type === 'spec' || !type ? repo.listSpecs() : [],
+        type === 'change' || !type ? repo.listChanges() : [],
+        type === 'archive' || !type ? repo.listArchives() : [],
+      ]);
 
-    const data: ListEntitiesResponse = {
-      specs,
-      changes,
-      archives,
-    };
+      const syncStatus = getSyncStatus();
 
-    // Update cache
-    cachedData = data;
-    cacheTime = now;
+      const data = {
+        specs,
+        changes,
+        archives,
+        syncedAt: syncStatus.lastSyncedAt?.toISOString() || null,
+      };
 
-    // Filter by type if requested
-    return NextResponse.json(filterByType(data, type));
+      return NextResponse.json(data);
+    } catch (dbError) {
+      console.error('[OpenSpec API] Database query failed, falling back to filesystem:', dbError);
+      return await fallbackToFilesystem(type);
+    }
   } catch (error: any) {
-    console.error('Failed to list OpenSpec entities:', error);
+    console.error('[OpenSpec API] Failed to list OpenSpec entities:', error);
 
     return NextResponse.json(
       {
@@ -54,6 +63,7 @@ export async function GET(request: NextRequest) {
         specs: [],
         changes: [],
         archives: [],
+        syncedAt: null,
       },
       { status: 500 }
     );
@@ -61,22 +71,23 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * Filter entities by type
+ * Fallback to filesystem if database fails
  */
-function filterByType(
-  data: ListEntitiesResponse,
-  type: string | null
-): ListEntitiesResponse {
-  if (!type) return data;
+async function fallbackToFilesystem(type: string | null) {
+  console.warn('[OpenSpec API] Using filesystem fallback');
 
-  switch (type) {
-    case 'spec':
-      return { specs: data.specs, changes: [], archives: [] };
-    case 'change':
-      return { specs: [], changes: data.changes, archives: [] };
-    case 'archive':
-      return { specs: [], changes: [], archives: data.archives };
-    default:
-      return data;
-  }
+  const [specs, changes, archives] = await Promise.all([
+    type === 'spec' || !type ? listSpecs() : [],
+    type === 'change' || !type ? listChanges() : [],
+    type === 'archive' || !type ? listArchives() : [],
+  ]);
+
+  return NextResponse.json({
+    specs,
+    changes,
+    archives,
+    syncedAt: null,
+    fallback: true,
+  });
 }
+
