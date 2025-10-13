@@ -5,7 +5,9 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { AgentOutputStream } from "./agent-output-stream";
+import { TodoListView } from "./agent-todo-list";
 import { useAgentStream } from "@/hooks/use-agent-stream";
+import { useAgentTodos } from "@/hooks/use-agent-todos";
 import { useAgentLifecycle } from "@/hooks/use-agent-lifecycle";
 import { useApprovals } from "@/contexts/approvals-context";
 import type { AgentSession } from "@/types/agent";
@@ -22,6 +24,7 @@ export function AgentInteractionModal({
   onOpenApprovals,
 }: AgentInteractionModalProps) {
   const { messages, status } = useAgentStream(agent.id);
+  const { todos, hasTodos } = useAgentTodos(agent.id);
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
   const { approvalCount } = useApprovals(agent.id);
   const [input, setInput] = useState("");
@@ -34,6 +37,19 @@ export function AgentInteractionModal({
     }
     return false;
   });
+  const [isTodoCollapsed, setIsTodoCollapsed] = useState(() => {
+    // Load from localStorage on mount
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('agent-todo-collapsed');
+      // Default to collapsed on mobile, expanded on desktop
+      if (saved !== null) {
+        return saved === 'true';
+      }
+      // Check if mobile (< 640px)
+      return window.innerWidth < 640;
+    }
+    return false;
+  });
   const modalRef = useRef<HTMLDivElement>(null);
 
   // Save to localStorage when state changes
@@ -42,6 +58,12 @@ export function AgentInteractionModal({
       localStorage.setItem('agent-input-collapsed', isInputCollapsed.toString());
     }
   }, [isInputCollapsed]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('agent-todo-collapsed', isTodoCollapsed.toString());
+    }
+  }, [isTodoCollapsed]);
 
   // Close on escape key
   useEffect(() => {
@@ -187,6 +209,15 @@ export function AgentInteractionModal({
               </span>
             </div>
           </div>
+        )}
+
+        {/* Todo List Section */}
+        {hasTodos && (
+          <TodoListView
+            todos={todos}
+            isCollapsed={isTodoCollapsed}
+            onToggleCollapse={() => setIsTodoCollapsed(!isTodoCollapsed)}
+          />
         )}
 
         {/* Messages Area */}

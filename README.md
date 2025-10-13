@@ -24,6 +24,7 @@ The SDK handles automatic context management, file operations, code execution, a
 - 🔐 Fine-grained tool permission control per agent
 - 📊 Real-time task progress and output streaming
 - 💾 Session persistence and agent state management
+- ✅ **Todo list visualization** - See agent task breakdowns and progress in real-time
 - 📋 **OpenSpec integration** - Spec-driven development with built-in validation and structured views
 
 ## Use Cases
@@ -87,6 +88,18 @@ Each agent instance in Agent View:
 3. Operates independently with its own context
 4. Reports progress through the UI in real-time
 5. Can be monitored and controlled remotely
+
+### Todo List Visualization
+
+Agent View displays structured task breakdowns when agents use the SDK's built-in `TodoWrite` tool for multi-step workflows:
+
+- **Real-time progress tracking** - See completed, in-progress, and pending tasks
+- **Visual indicators** - ✅ completed, 🔧 in progress, ⭕ pending
+- **Progress bar** - Shows completion percentage at a glance
+- **Mobile optimized** - Collapsible section with touch-friendly controls
+- **Current activity highlighting** - In-progress tasks show activeForm text ("Running tests" vs "Run tests")
+
+The todo list appears automatically in the agent interaction modal when an agent breaks down complex tasks. It's collapsible and remembers your preference, providing quick insight into what the agent is working on without cluttering the interface.
 
 ## OpenSpec Integration
 

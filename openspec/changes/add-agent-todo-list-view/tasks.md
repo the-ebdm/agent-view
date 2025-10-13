@@ -8,14 +8,14 @@ Implementation tasks for adding a structured todo list display to the agent inte
 
 ## Phase 1: Core Todo Parsing (Foundation)
 
-- [ ] 1.1 Create todo types
+- [x] 1.1 Create todo types
 
   - File: `src/types/agent.ts`
   - Add `TodoItem` interface
   - TypeScript compiles without errors
   - User-visible: None (internal type only)
 
-- [ ] 1.2 Implement useAgentTodos hook
+- [x] 1.2 Implement useAgentTodos hook
 
   - File: `src/hooks/use-agent-todos.ts` (new)
   - Create hook that subscribes to `useAgentStream(agentId)`
@@ -27,7 +27,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Progress calculation is correct (completed/total)
   - User-visible: None (hook only, no UI)
 
-- [ ] 1.3 Add defensive parsing and error handling
+- [x] 1.3 Add defensive parsing and error handling
   - File: `src/hooks/use-agent-todos.ts`
   - Validate todos array structure
   - Filter out malformed todo items
@@ -43,7 +43,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
 
 ## Phase 2: Todo List Component (UI Foundation)
 
-- [ ] 2.1 Create TodoListView component
+- [x] 2.1 Create TodoListView component
 
   - File: `src/components/features/agent-todo-list.tsx` (new)
   - Create functional component with props: `{ todos, isCollapsed, onToggleCollapse }`
@@ -54,7 +54,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Component accepts props without TypeScript errors
   - User-visible: Component exists but not yet integrated in modal
 
-- [ ] 2.2 Add progress bar and metrics
+- [x] 2.2 Add progress bar and metrics
 
   - File: `src/components/features/agent-todo-list.tsx`
   - Calculate completed/total counts from todos prop
@@ -67,7 +67,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Sparkle appears only when 100% complete
   - User-visible: Progress metrics visible in component
 
-- [ ] 2.3 Implement collapse/expand functionality
+- [x] 2.3 Implement collapse/expand functionality
 
   - File: `src/components/features/agent-todo-list.tsx`
   - Render collapse button with ▼/▲ indicator
@@ -81,7 +81,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Transitions are smooth
   - User-visible: Collapse/expand interaction works
 
-- [ ] 2.4 Style for dark mode
+- [x] 2.4 Style for dark mode
   - File: `src/components/features/agent-todo-list.tsx`
   - Add `dark:` Tailwind variants for all colors
   - Use `dark:bg-gray-800` for backgrounds
@@ -97,7 +97,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
 
 ## Phase 3: Modal Integration (User-Facing Feature)
 
-- [ ] 3.1 Integrate TodoListView into AgentInteractionModal
+- [x] 3.1 Integrate TodoListView into AgentInteractionModal
 
   - File: `src/components/features/agent-interaction-modal.tsx`
   - Import `TodoListView` and `useAgentTodos`
@@ -110,7 +110,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Todo list positioned correctly in layout
   - User-visible: **✅ Todo list now visible in agent modal!**
 
-- [ ] 3.2 Add localStorage persistence for collapse state
+- [x] 3.2 Add localStorage persistence for collapse state
 
   - File: `src/components/features/agent-interaction-modal.tsx`
   - Load initial collapse state from `localStorage.getItem('agent-todo-collapsed')`
@@ -120,7 +120,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Default to expanded on desktop, collapsed on mobile (< 640px)
   - User-visible: Collapse preference remembered
 
-- [ ] 3.3 Adjust modal layout spacing
+- [x] 3.3 Adjust modal layout spacing
   - File: `src/components/features/agent-interaction-modal.tsx`
   - Add consistent spacing between sections
   - Ensure todo list has proper margins/padding
@@ -135,7 +135,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
 
 ## Phase 4: Mobile Optimization (Responsive Design)
 
-- [ ] 4.1 Optimize for mobile screens
+- [x] 4.1 Optimize for mobile screens
 
   - File: `src/components/features/agent-todo-list.tsx`
   - Add responsive padding (1rem → 0.75rem → 0.5rem)
@@ -147,7 +147,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - No horizontal scrolling
   - User-visible: Mobile experience optimized
 
-- [ ] 4.2 Default to collapsed on mobile
+- [x] 4.2 Default to collapsed on mobile
   - File: `src/components/features/agent-interaction-modal.tsx`
   - Detect screen width in initial state calculation
   - Default to collapsed when `window.innerWidth < 640`
@@ -161,7 +161,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
 
 ## Phase 5: Polish and Refinement (Quality)
 
-- [ ] 5.1 Add activeForm display for in-progress todos
+- [x] 5.1 Add activeForm display for in-progress todos
 
   - File: `src/components/features/agent-todo-list.tsx`
   - Check if `todo.status === 'in_progress'`
@@ -173,7 +173,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Visual distinction is clear
   - User-visible: Current task is clearly highlighted
 
-- [ ] 5.2 Add smooth transitions for status changes
+- [x] 5.2 Add smooth transitions for status changes
 
   - File: `src/components/features/agent-todo-list.tsx`
   - Add CSS transitions for icon changes
@@ -185,7 +185,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - List remains stable during updates
   - User-visible: Status updates feel polished
 
-- [ ] 5.3 Add ARIA labels and accessibility
+- [x] 5.3 Add ARIA labels and accessibility
   - File: `src/components/features/agent-todo-list.tsx`
   - Add `aria-label="Agent task list"` to section
   - Add `aria-expanded={!isCollapsed}` to collapse button
@@ -202,7 +202,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
 
 ## Phase 6: Documentation
 
-- [ ] 6.1 Update README with todo list feature
+- [x] 6.1 Update README with todo list feature
 
   - File: `README.md`
   - Add section describing todo list feature
@@ -212,7 +212,7 @@ Implementation tasks for adding a structured todo list display to the agent inte
   - Documentation is clear and helpful
   - User-visible: Feature documented
 
-- [ ] 6.2 Add inline code comments
+- [x] 6.2 Add inline code comments
   - Files: `src/hooks/use-agent-todos.ts`, `src/components/features/agent-todo-list.tsx`
   - Add JSDoc comments for hook and component
   - Explain parsing logic and error handling

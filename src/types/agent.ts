@@ -69,3 +69,10 @@ export interface PendingApproval {
   params: Record<string, unknown>;
   timestamp: number;
 }
+
+// Agent todo item (from TodoWrite tool)
+export interface TodoItem {
+  content: string;        // Task description (e.g., "Run tests")
+  activeForm: string;     // Present continuous form (e.g., "Running tests")
+  status: 'pending' | 'in_progress' | 'completed';
+}
