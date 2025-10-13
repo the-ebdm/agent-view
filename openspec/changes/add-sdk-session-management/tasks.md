@@ -123,29 +123,14 @@
 - [ ] 12.4 Add tooltips explaining session-dependent features
 - [ ] 12.5 Style session indicators consistently across UI
 
-## 13. Testing & Validation
+## 13. Documentation & Cleanup
 
-- [ ] 13.1 Test session_id capture with multiple concurrent agents
-- [ ] 13.2 Test reply to running agent (continues conversation)
-- [ ] 13.3 Test reply to completed agent (extends from end)
-- [ ] 13.4 Test fork from running agent (independent branches)
-- [ ] 13.5 Test fork from historical agent
-- [ ] 13.6 Test multiple forks from same parent (verify independence)
-- [ ] 13.7 Test pause/resume with session resumption (verify context preserved)
-- [ ] 13.8 Test resume after server restart (load paused agents from DB)
-- [ ] 13.9 Test legacy agents without session_id (verify graceful degradation)
-- [ ] 13.10 Test session expiration handling (when SDK returns expired session error)
-- [ ] 13.11 Performance test: session_id lookups with index vs without
-- [ ] 13.12 Stress test: 20 concurrent agents with session capture
-
-## 14. Documentation & Cleanup
-
-- [ ] 14.1 Update `docs/ARCHITECTURE.md` with session management architecture
-- [ ] 14.2 Document pause/resume implementation approach
-- [ ] 14.3 Document reply and fork workflows with examples
-- [ ] 14.4 Update `CLAUDE.md` with session management features
-- [ ] 14.5 Add API endpoint documentation for reply and fork
-- [ ] 14.6 Add code comments explaining session capture flow
-- [ ] 14.7 Update database schema documentation
-- [ ] 14.8 Run `openspec validate add-sdk-session-management --strict` and resolve issues
-- [ ] 14.9 Archive change proposal when complete
+- [ ] 13.1 Update `docs/ARCHITECTURE.md` with session management architecture
+- [ ] 13.2 Document pause/resume implementation approach
+- [ ] 13.3 Document reply and fork workflows with examples
+- [ ] 13.4 Update `CLAUDE.md` with session management features
+- [ ] 13.5 Add API endpoint documentation for reply and fork
+- [ ] 13.6 Add code comments explaining session capture flow
+- [ ] 13.7 Update database schema documentation
+- [ ] 13.8 Run `openspec validate add-sdk-session-management --strict` and resolve issues
+- [ ] 13.9 Archive change proposal when complete
