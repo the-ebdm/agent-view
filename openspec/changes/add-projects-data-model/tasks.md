@@ -1,5 +1,37 @@
 # Implementation Tasks
 
+## Implementation Status
+
+**Last Updated:** 2025-10-13
+
+### Completed ✅
+- ✅ Database schema migration to version 2 (projects + worktrees tables)
+- ✅ ProjectsRepository with full CRUD operations
+- ✅ WorktreesRepository with full CRUD operations
+- ✅ Git worktree detection utilities
+- ✅ Project auto-discovery service (creates projects and worktrees on agent spawn)
+- ✅ Agent spawn flow integration (async discovery, automatic linking)
+- ✅ Projects API endpoints (GET, PATCH, DELETE)
+- ✅ Worktrees API endpoints (GET, PATCH, DELETE)
+- ✅ Favorites, tags, and archival features
+- ✅ TypeScript types for projects and worktrees
+
+### In Progress 🚧
+- Count management in agent lifecycle (needs updates on stop/complete)
+
+### Not Yet Implemented ❌
+- Data backfill for existing agents
+- Count reconciliation logic
+- Default tool permissions application from projects
+- OpenSpec path application from projects
+- Manual project creation endpoint (POST /api/projects)
+- Project discovery endpoint (GET /api/projects/discover)
+- Scheduled reconciliation job
+- Testing and validation
+- Documentation updates
+
+---
+
 ## 1. Database Schema Migration
 
 - [x] 1.1 Create projects table schema
