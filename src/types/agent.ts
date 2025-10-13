@@ -44,6 +44,7 @@ export interface AgentSession {
   endTime?: number;
   pausedTime?: number; // Phase 2: Track pause duration
   messages: AgentMessage[];
+  pendingApprovals?: PendingApproval[]; // Tool approvals awaiting user action
 }
 
 export interface AgentHistoryItem {
@@ -56,4 +57,13 @@ export interface AgentHistoryItem {
   startTime: number;
   endTime?: number;
   messageCount: number;
+}
+
+// Pending tool approval request
+export interface PendingApproval {
+  id: string;
+  toolName: ToolName;
+  description: string;
+  params: Record<string, unknown>;
+  timestamp: number;
 }

@@ -1,4 +1,4 @@
-import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem, ToolPermission, AgentMetrics, AgentLifecycleState } from '@/types/agent';
+import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem, ToolPermission, AgentMetrics, AgentLifecycleState, PendingApproval, ToolName } from '@/types/agent';
 import { generateAgentName, validateAgentName, ensureUniqueName } from './agent-names';
 import { getDefaultToolPermission, validateToolPermission } from './tool-permissions';
 import { getAgentsRepository, isPersistenceEnabled } from './database';
@@ -370,6 +370,89 @@ class AgentSessionManager {
 
   getHistoricalSession(id: string): AgentSession | undefined {
     return this.sessions.get(id);
+  }
+
+  /**
+   * Add a pending approval request for an agent
+   */
+  addPendingApproval(
+    agentId: string,
+    toolName: ToolName,
+    description: string,
+    params: Record<string, unknown>
+  ): string {
+    const session = this.sessions.get(agentId);
+    if (!session) {
+      throw new Error('Agent not found');
+    }
+
+    const approvalId = `approval_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const approval: PendingApproval = {
+      id: approvalId,
+      toolName,
+      description,
+      params,
+      timestamp: Date.now(),
+    };
+
+    if (!session.pendingApprovals) {
+      session.pendingApprovals = [];
+    }
+
+    session.pendingApprovals.push(approval);
+    console.log(`[SessionManager] Added approval request for ${toolName} on agent ${agentId}`);
+
+    return approvalId;
+  }
+
+  /**
+   * Get all pending approvals for an agent
+   */
+  getPendingApprovals(agentId: string): PendingApproval[] {
+    const session = this.sessions.get(agentId);
+    return session?.pendingApprovals || [];
+  }
+
+  /**
+   * Approve a pending approval request
+   */
+  approveRequest(agentId: string, approvalId: string): void {
+    const session = this.sessions.get(agentId);
+    if (!session || !session.pendingApprovals) {
+      throw new Error('Agent or approval not found');
+    }
+
+    const approvalIndex = session.pendingApprovals.findIndex(a => a.id === approvalId);
+    if (approvalIndex === -1) {
+      throw new Error('Approval not found');
+    }
+
+    // Remove from pending
+    session.pendingApprovals.splice(approvalIndex, 1);
+    console.log(`[SessionManager] Approved request ${approvalId} for agent ${agentId}`);
+
+    // TODO: Signal to Claude SDK to continue execution
+  }
+
+  /**
+   * Deny a pending approval request
+   */
+  denyRequest(agentId: string, approvalId: string): void {
+    const session = this.sessions.get(agentId);
+    if (!session || !session.pendingApprovals) {
+      throw new Error('Agent or approval not found');
+    }
+
+    const approvalIndex = session.pendingApprovals.findIndex(a => a.id === approvalId);
+    if (approvalIndex === -1) {
+      throw new Error('Approval not found');
+    }
+
+    // Remove from pending
+    session.pendingApprovals.splice(approvalIndex, 1);
+    console.log(`[SessionManager] Denied request ${approvalId} for agent ${agentId}`);
+
+    // TODO: Signal to Claude SDK to abort/skip this tool use
   }
 }
 

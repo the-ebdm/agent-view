@@ -237,11 +237,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
     }
 
     // View mode
-    return (
-      <div className="prose dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300 prose-li:text-gray-700 dark:prose-li:text-gray-300 prose-code:text-gray-900 dark:prose-code:text-gray-100 prose-pre:bg-gray-100 dark:prose-pre:bg-gray-900 prose-a:text-blue-600 dark:prose-a:text-blue-400">
-        <MarkdownRenderer content={getCurrentContent()} />
-      </div>
-    );
+    return <MarkdownRenderer content={getCurrentContent()} />;
   };
 
   return (

@@ -4,11 +4,13 @@
 import React, { useState } from "react";
 import { AgentCard } from "./agent-card";
 import { AgentInteractionModal } from "./agent-interaction-modal";
+import { PermissionApprovalDrawer } from "./permission-approval-drawer";
 import { useActiveAgents } from "@/contexts/active-agents-context";
 
 export function ActiveAgentsDashboard() {
   const { agents, isLoading, error } = useActiveAgents();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [approvalDrawerAgentId, setApprovalDrawerAgentId] = useState<string | null>(null);
 
   const selectedAgent = agents.find((a) => a.id === selectedAgentId);
 
@@ -104,6 +106,7 @@ export function ActiveAgentsDashboard() {
               agent={agent}
               metrics={agent.metrics}
               onOpenModal={() => setSelectedAgentId(agent.id)}
+              onOpenApprovals={() => setApprovalDrawerAgentId(agent.id)}
             />
           ))}
         </div>
@@ -114,6 +117,15 @@ export function ActiveAgentsDashboard() {
         <AgentInteractionModal
           agent={selectedAgent}
           onClose={() => setSelectedAgentId(null)}
+        />
+      )}
+
+      {/* Permission Approval Drawer */}
+      {approvalDrawerAgentId && (
+        <PermissionApprovalDrawer
+          agentId={approvalDrawerAgentId}
+          isOpen={approvalDrawerAgentId !== null}
+          onClose={() => setApprovalDrawerAgentId(null)}
         />
       )}
     </div>

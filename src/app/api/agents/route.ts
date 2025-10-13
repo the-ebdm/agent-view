@@ -30,6 +30,8 @@ export async function GET(request: Request) {
         status: agent.status,
         lifecycleState: agent.lifecycleState,
         toolPermissions: agent.toolPermissions,
+        projectId: agent.projectId,
+        worktreeId: agent.worktreeId,
         startTime: agent.startTime,
         messageCount: agent.messages.length,
         metrics,

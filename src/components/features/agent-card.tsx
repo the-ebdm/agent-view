@@ -1,7 +1,7 @@
 // Phase 2: Agent Card component for dashboard grid
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,11 +12,33 @@ interface AgentCardProps {
   agent: AgentSession;
   metrics?: AgentMetrics;
   onOpenModal?: () => void;
+  onOpenApprovals?: () => void;
 }
 
-export function AgentCard({ agent, metrics, onOpenModal }: AgentCardProps) {
+export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: AgentCardProps) {
   const { pause, resume, stop } = useAgentLifecycle(agent.id);
   const [showConfirmStop, setShowConfirmStop] = useState(false);
+  const [approvalCount, setApprovalCount] = useState(0);
+
+  // Fetch pending approvals count
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      try {
+        const response = await fetch(`/api/agents/${agent.id}/approvals`);
+        if (response.ok) {
+          const data = await response.json();
+          setApprovalCount(data.count || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching approvals:', error);
+      }
+    };
+
+    fetchApprovals();
+    // Poll for updates
+    const interval = setInterval(fetchApprovals, 3000);
+    return () => clearInterval(interval);
+  }, [agent.id]);
 
   const formatTime = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
@@ -148,7 +170,33 @@ export function AgentCard({ agent, metrics, onOpenModal }: AgentCardProps) {
           {' '}
           {agent.toolPermissions.preset}
         </Badge>
+        {approvalCount > 0 && (
+          <Badge className="text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 animate-pulse">
+            ⚠️ {approvalCount} Approval{approvalCount !== 1 ? 's' : ''} Needed
+          </Badge>
+        )}
       </div>
+
+      {/* Approval Alert */}
+      {approvalCount > 0 && (
+        <div
+          className="mb-3 p-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenApprovals?.();
+          }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-orange-600 dark:text-orange-400">⚠️</span>
+              <span className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                {approvalCount} permission{approvalCount !== 1 ? 's' : ''} pending
+              </span>
+            </div>
+            <span className="text-xs text-orange-600 dark:text-orange-400">Click to review →</span>
+          </div>
+        </div>
+      )}
 
       {/* Metrics */}
       {metrics && (
