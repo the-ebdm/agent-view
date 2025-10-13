@@ -36,9 +36,9 @@ export class AgentsRepository {
     this.createStmt = this.db.prepare(`
       INSERT INTO agents (
         id, name, prompt, directory, status, lifecycle_state,
-        tool_permissions, start_time, end_time, paused_time,
+        tool_permissions, project_id, worktree_id, start_time, end_time, paused_time,
         created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     this.findByIdStmt = this.db.prepare(`
@@ -91,6 +91,8 @@ export class AgentsRepository {
         agent.status,
         agent.lifecycleState,
         JSON.stringify(agent.toolPermissions),
+        agent.projectId || null,
+        agent.worktreeId || null,
         agent.startTime,
         agent.endTime || null,
         agent.pausedTime || null,
@@ -222,6 +224,8 @@ export class AgentsRepository {
       status: row.status,
       lifecycleState: row.lifecycle_state,
       toolPermissions: JSON.parse(row.tool_permissions),
+      projectId: row.project_id || undefined,
+      worktreeId: row.worktree_id || undefined,
       startTime: row.start_time,
       endTime: row.end_time,
       pausedTime: row.paused_time,

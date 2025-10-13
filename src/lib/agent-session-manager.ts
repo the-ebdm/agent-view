@@ -2,6 +2,7 @@ import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem, ToolPer
 import { generateAgentName, validateAgentName, ensureUniqueName } from './agent-names';
 import { getDefaultToolPermission, validateToolPermission } from './tool-permissions';
 import { getAgentsRepository, isPersistenceEnabled } from './database';
+import { discoverProject } from './services/project-discovery';
 
 class AgentSessionManager {
   private sessions: Map<string, AgentSession> = new Map();
@@ -13,14 +14,15 @@ class AgentSessionManager {
   /**
    * Phase 2: Create session with multi-agent support
    * No longer terminates existing agents
+   * Now includes automatic project and worktree discovery
    */
-  createSession(
+  async createSession(
     id: string,
     prompt: string,
     directory: string,
     name?: string,
     toolPermissions?: ToolPermission
-  ): AgentSession {
+  ): Promise<AgentSession> {
     // Phase 2: Generate or validate agent name
     let agentName = name || generateAgentName();
 
@@ -44,6 +46,26 @@ class AgentSessionManager {
       throw new Error(permValidation.error);
     }
 
+    // Auto-discover project and worktree
+    let projectId: string | undefined;
+    let worktreeId: string | undefined;
+
+    if (isPersistenceEnabled()) {
+      try {
+        const discovery = await discoverProject(directory);
+        projectId = discovery.project.id;
+        worktreeId = discovery.worktree?.id;
+
+        console.log(`[AgentSessionManager] Discovered project: ${discovery.project.name} (${projectId})`);
+        if (discovery.worktree) {
+          console.log(`[AgentSessionManager] Discovered worktree: ${discovery.worktree.name} (${worktreeId})`);
+        }
+      } catch (error) {
+        console.error('[AgentSessionManager] Failed to discover project:', error);
+        // Continue without project association
+      }
+    }
+
     const session: AgentSession = {
       id,
       name: agentName,
@@ -52,6 +74,8 @@ class AgentSessionManager {
       status: 'running',
       lifecycleState: 'running', // Phase 2
       toolPermissions: permissions, // Phase 2
+      projectId,
+      worktreeId,
       startTime: Date.now(),
       messages: [],
     };

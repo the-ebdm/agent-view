@@ -12,7 +12,10 @@
       "Bash(openspec:*)",
       "Bash(npx openspec list:*)",
       "Bash(mkdir:*)",
-      "Bash(bun add:*)"
+      "Bash(bun add:*)",
+      "Read(//Users/ericmuir/.config/agent-view/**)",
+      "Bash(sqlite3:*)",
+      "Read(//private/tmp/**)"
     ],
     "deny": [],
     "ask": []

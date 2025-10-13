@@ -38,6 +38,8 @@ export interface AgentSession {
   status: AgentStatus;
   lifecycleState: AgentLifecycleState; // Phase 2: Lifecycle control
   toolPermissions: ToolPermission; // Phase 2: Permission system
+  projectId?: string; // Project association (auto-discovered)
+  worktreeId?: string; // Worktree association (auto-discovered)
   startTime: number;
   endTime?: number;
   pausedTime?: number; // Phase 2: Track pause duration

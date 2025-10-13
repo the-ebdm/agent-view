@@ -11,7 +11,7 @@ import { getDatabase } from './client';
 /**
  * Current schema version
  */
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 /**
  * Initialize database schema
@@ -171,6 +171,79 @@ function createSchemaV1(db: Database.Database): void {
 }
 
 /**
+ * Migrate from schema version 1 to version 2
+ * Adds projects and worktrees tables with foreign keys to agents and agent_configs
+ */
+function migrateV1toV2(db: Database.Database): void {
+  console.log('[Schema] Migrating schema from version 1 to 2...');
+
+  // Create projects table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      directory TEXT NOT NULL UNIQUE,
+      description TEXT,
+      openspec_path TEXT,
+      default_tool_permissions TEXT,
+      is_favorite INTEGER NOT NULL DEFAULT 0,
+      tags TEXT,
+      agent_count INTEGER NOT NULL DEFAULT 0,
+      active_agent_count INTEGER NOT NULL DEFAULT 0,
+      worktree_count INTEGER NOT NULL DEFAULT 0,
+      last_used INTEGER,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+      updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+      archived_at INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_projects_directory ON projects(directory);
+    CREATE INDEX IF NOT EXISTS idx_projects_last_used ON projects(last_used DESC);
+    CREATE INDEX IF NOT EXISTS idx_projects_favorite ON projects(is_favorite DESC, last_used DESC);
+    CREATE INDEX IF NOT EXISTS idx_projects_archived ON projects(archived_at);
+  `);
+
+  // Create worktrees table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS worktrees (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      directory TEXT NOT NULL UNIQUE,
+      branch TEXT,
+      is_main INTEGER NOT NULL DEFAULT 0,
+      agent_count INTEGER NOT NULL DEFAULT 0,
+      active_agent_count INTEGER NOT NULL DEFAULT 0,
+      last_used INTEGER,
+      created_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+      updated_at INTEGER NOT NULL DEFAULT (strftime('%s','now') * 1000),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_worktrees_project_id ON worktrees(project_id);
+    CREATE INDEX IF NOT EXISTS idx_worktrees_directory ON worktrees(directory);
+    CREATE INDEX IF NOT EXISTS idx_worktrees_last_used ON worktrees(last_used DESC);
+    CREATE INDEX IF NOT EXISTS idx_worktrees_is_main ON worktrees(is_main DESC);
+  `);
+
+  // Add project_id and worktree_id columns to agents table
+  db.exec(`
+    ALTER TABLE agents ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL;
+    ALTER TABLE agents ADD COLUMN worktree_id TEXT REFERENCES worktrees(id) ON DELETE SET NULL;
+    CREATE INDEX IF NOT EXISTS idx_agents_project_id ON agents(project_id);
+    CREATE INDEX IF NOT EXISTS idx_agents_worktree_id ON agents(worktree_id);
+  `);
+
+  // Add project_id column to agent_configs table
+  db.exec(`
+    ALTER TABLE agent_configs ADD COLUMN project_id TEXT REFERENCES projects(id) ON DELETE SET NULL;
+    CREATE INDEX IF NOT EXISTS idx_configs_project_id ON agent_configs(project_id);
+  `);
+
+  console.log('[Schema] Migration to version 2 complete');
+}
+
+/**
  * Run database migrations
  * Applies incremental schema changes from currentVersion to CURRENT_SCHEMA_VERSION
  */
@@ -178,8 +251,8 @@ function runMigrations(db: Database.Database, fromVersion: number): void {
   console.log(`[Schema] Running migrations from version ${fromVersion} to ${CURRENT_SCHEMA_VERSION}...`);
 
   const migrations: Array<(db: Database.Database) => void> = [
+    migrateV1toV2,
     // Add future migrations here
-    // migrateV1toV2,
     // migrateV2toV3,
   ];
 
@@ -214,6 +287,8 @@ export function dropAllTables(): void {
   db.exec(`
     DROP TABLE IF EXISTS messages;
     DROP TABLE IF EXISTS agents;
+    DROP TABLE IF EXISTS worktrees;
+    DROP TABLE IF EXISTS projects;
     DROP TABLE IF EXISTS agent_configs;
     DROP TABLE IF EXISTS settings;
   `);

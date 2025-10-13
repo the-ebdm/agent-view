@@ -33,8 +33,8 @@ export async function POST(request: Request) {
     // Generate unique agent ID
     const agentId = `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Phase 2: Create session with name and permissions
-    const session = sessionManager.createSession(
+    // Phase 2: Create session with name and permissions (now async for project discovery)
+    const session = await sessionManager.createSession(
       agentId,
       prompt,
       directory,

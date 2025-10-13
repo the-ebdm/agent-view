@@ -1,44 +1,70 @@
 # Implementation Tasks
 
+## Progress Summary
+
+**Overall Status**: ~75% Complete (Core persistence implemented, remaining: session recovery, API enhancements, cleanup jobs, testing, docs)
+
+### Completed (Sections 1-3, 4-6):
+- ✅ **Setup & Infrastructure** (1.1-1.4): Dependencies, database directory, configuration, feature flag
+- ✅ **Database Client & Schema** (2.1-2.4): Client singleton, schema v1 & v2, migrations, versioning
+- ✅ **Repository Layer** (3.1-3.4): All repositories implemented with prepared statements
+- ✅ **Session Manager Integration** (4.1-4.4): Persistence for create, update, and all lifecycle methods
+- ✅ **Execution Manager Integration** (5.1-5.3): Message persistence and buffering via database
+- ✅ **Config Storage Migration** (6.1-6.6): Full migration to database including localStorage migration endpoint
+
+### In Progress / Partially Complete:
+- 🔄 **API Endpoints** (7.2-7.3): Agents and history endpoints exist but still use in-memory data
+- 🔄 **Session Recovery** (4.5): Not yet implemented
+- 🔄 **Cleanup & Maintenance** (8.1-8.3): Helper methods exist but not scheduled/automated
+
+### Not Started:
+- ❌ **API Enhancements** (7.1, 7.4): Health endpoint, messages pagination endpoint
+- ❌ **Background Jobs** (8.1-8.3): Retention policy, vacuum, backup automation
+- ❌ **Testing & Validation** (9.1-9.7): All testing tasks
+- ❌ **Documentation** (10.1-10.4): README, troubleshooting, architecture docs
+
+---
+
 ## 1. Setup & Infrastructure
 
-- [ ] 1.1 Install `better-sqlite3` dependency
+- [x] 1.1 Install `better-sqlite3` dependency
   - Run `bun add better-sqlite3`
   - Run `bun add -d @types/better-sqlite3`
-- [ ] 1.2 Create database directory structure
+- [x] 1.2 Create database directory structure
   - Create `src/lib/database/` directory
   - Create `src/lib/database/repositories/` directory
-- [ ] 1.3 Add database path configuration
+- [x] 1.3 Add database path configuration
   - Add `DATABASE_PATH` environment variable support (default: `~/.config/agent-view/database.sqlite`)
   - Create directory `~/.config/agent-view/` if not exists
-- [ ] 1.4 Add feature flag
+- [x] 1.4 Add feature flag
   - Add `ENABLE_PERSISTENCE` environment variable (default: true)
 
 ## 2. Database Client & Schema
 
-- [ ] 2.1 Implement database client singleton (`src/lib/database/client.ts`)
+- [x] 2.1 Implement database client singleton (`src/lib/database/client.ts`)
   - Export `getDatabase()` function
   - Initialize SQLite connection with WAL mode
   - Handle connection errors gracefully
-- [ ] 2.2 Create database schema (`src/lib/database/schema.ts`)
+- [x] 2.2 Create database schema (`src/lib/database/schema.ts`)
   - Define `agents` table schema
   - Define `messages` table schema
   - Define `agent_configs` table schema
-  - Define `agent_metrics` table schema (future Phase 4)
-  - Define `execution_snapshots` table schema (future Phase 4)
+  - Define `projects` table schema (v2)
+  - Define `worktrees` table schema (v2)
   - Define `settings` table schema
-- [ ] 2.3 Implement schema initialization
+  - (Note: `agent_metrics` and `execution_snapshots` deferred to Phase 4)
+- [x] 2.3 Implement schema initialization
   - Create all tables if not exists
   - Create all indexes
   - Seed default settings
-- [ ] 2.4 Implement schema versioning
+- [x] 2.4 Implement schema versioning
   - Add `schema_version` to settings table
-  - Implement migration runner
+  - Implement migration runner (with v1->v2 migration)
   - Add version check on startup
 
 ## 3. Repository Implementation
 
-- [ ] 3.1 Implement AgentsRepository (`src/lib/database/repositories/agents.ts`)
+- [x] 3.1 Implement AgentsRepository (`src/lib/database/repositories/agents.ts`)
   - `create(agent: AgentSession): void`
   - `findById(id: string): AgentSession | undefined`
   - `findAll(): AgentSession[]`
@@ -46,14 +72,14 @@
   - `update(id: string, updates: Partial<AgentSession>): void`
   - `delete(id: string): void`
   - Use prepared statements for all queries
-- [ ] 3.2 Implement MessagesRepository (`src/lib/database/repositories/messages.ts`)
+- [x] 3.2 Implement MessagesRepository (`src/lib/database/repositories/messages.ts`)
   - `create(message: AgentMessage & { agentId: string }): number`
   - `findByAgentId(agentId: string, options?: { limit?: number, offset?: number }): AgentMessage[]`
   - `findRecentByAgentId(agentId: string, limit: number): AgentMessage[]`
   - `countByAgentId(agentId: string): number`
   - `deleteOlderThan(timestamp: number): number`
   - Use prepared statements for all queries
-- [ ] 3.3 Implement ConfigsRepository (`src/lib/database/repositories/configs.ts`)
+- [x] 3.3 Implement ConfigsRepository (`src/lib/database/repositories/configs.ts`)
   - `create(config: SavedAgentConfig): SavedAgentConfig`
   - `findById(id: string): SavedAgentConfig | undefined`
   - `findAll(): SavedAgentConfig[]`
@@ -62,28 +88,29 @@
   - `toggleFavorite(id: string): void`
   - `delete(id: string): void`
   - Use prepared statements for all queries
-- [ ] 3.4 Implement SettingsRepository (`src/lib/database/repositories/settings.ts`)
+- [x] 3.4 Implement SettingsRepository (`src/lib/database/repositories/settings.ts`)
   - `get(key: string): string | undefined`
   - `set(key: string, value: string): void`
   - `getAll(): Record<string, string>`
   - Use prepared statements for all queries
+  - (Also includes `getNumber()` and `getBoolean()` helper methods)
 
 ## 4. Integration with AgentSessionManager
 
-- [ ] 4.1 Add database persistence to `createSession()`
-  - Call `AgentsRepository.create()` after creating in-memory session
+- [x] 4.1 Add database persistence to `createSession()`
+  - Call `AgentsRepository.create()` after creating in-memory session (src/lib/agent-session-manager.ts:66)
   - Wrap in try-catch for graceful degradation
-- [ ] 4.2 Add database persistence to `addMessage()`
-  - Call `MessagesRepository.create()` after adding to in-memory messages
+- [x] 4.2 Add database persistence to `addMessage()`
+  - Call `MessagesRepository.create()` after adding to in-memory messages (via AgentExecutionManager)
   - Wrap in try-catch for graceful degradation
-- [ ] 4.3 Add database persistence to `updateStatus()`
-  - Call `AgentsRepository.update()` after updating in-memory status
+- [x] 4.3 Add database persistence to `updateStatus()`
+  - Call `AgentsRepository.update()` after updating in-memory status (src/lib/agent-session-manager.ts:265)
   - Wrap in try-catch for graceful degradation
-- [ ] 4.4 Add database persistence to lifecycle methods
-  - Update `pauseAgent()` to persist lifecycle_state
-  - Update `resumeAgent()` to persist lifecycle_state
-  - Update `stopAgent()` to persist lifecycle_state and end_time
-  - Update `renameAgent()` to persist name
+- [x] 4.4 Add database persistence to lifecycle methods
+  - Update `pauseAgent()` to persist lifecycle_state (src/lib/agent-session-manager.ts:128)
+  - Update `resumeAgent()` to persist lifecycle_state (src/lib/agent-session-manager.ts:158)
+  - Update `stopAgent()` to persist lifecycle_state and end_time (src/lib/agent-session-manager.ts:186)
+  - Update `renameAgent()` to persist name (src/lib/agent-session-manager.ts:228)
 - [ ] 4.5 Implement session recovery
   - Load active agents from database on startup
   - Restore to `activeAgents` map
@@ -91,31 +118,31 @@
 
 ## 5. Integration with AgentExecutionManager
 
-- [ ] 5.1 Add message persistence to `broadcastMessage()`
-  - Call `MessagesRepository.create()` for each message
+- [x] 5.1 Add message persistence to `broadcastMessage()`
+  - Call `MessagesRepository.create()` for each message (src/lib/agent-execution-manager.ts:278)
   - Wrap in try-catch to prevent blocking execution
-- [ ] 5.2 Update `getBufferedMessages()` to use database
-  - Query `MessagesRepository.findRecentByAgentId(id, 100)`
+- [x] 5.2 Update `getBufferedMessages()` to use database
+  - Query `MessagesRepository.findRecentByAgentId(id, 100)` (src/lib/agent-execution-manager.ts:129)
   - Fall back to in-memory buffer if database fails
-- [ ] 5.3 Add database cleanup to `stopAgent()`
+- [x] 5.3 Add database cleanup to `stopAgent()`
   - Keep message buffer in database (no cleanup needed)
-  - Remove in-memory buffer after cleanup delay
+  - Remove in-memory buffer after cleanup delay (implemented as designed)
 
 ## 6. Integration with AgentConfigStorage
 
-- [ ] 6.1 Migrate `saveConfig()` to use database
-  - Replace localStorage with `ConfigsRepository.create()`
+- [x] 6.1 Migrate `saveConfig()` to use database
+  - Replace localStorage with `ConfigsRepository.create()` (src/app/api/configs/route.ts:84)
   - Handle unique constraint violations
-- [ ] 6.2 Migrate `getConfigs()` to use database
-  - Replace localStorage read with `ConfigsRepository.findAll()`
-- [ ] 6.3 Migrate `deleteConfig()` to use database
-  - Replace localStorage delete with `ConfigsRepository.delete()`
-- [ ] 6.4 Migrate `addToRecent()` to use database
-  - Use `ConfigsRepository.updateLastUsed()`
-- [ ] 6.5 Migrate `getRecent()` to use database
-  - Replace localStorage read with `ConfigsRepository.findRecent(10)`
-- [ ] 6.6 Implement localStorage migration endpoint
-  - Create `/api/configs/migrate` POST endpoint
+- [x] 6.2 Migrate `getConfigs()` to use database
+  - Replace localStorage read with `ConfigsRepository.findAll()` (src/app/api/configs/route.ts:32-34)
+- [x] 6.3 Migrate `deleteConfig()` to use database
+  - Replace localStorage delete with `ConfigsRepository.delete()` (src/app/api/configs/[id]/route.ts)
+- [x] 6.4 Migrate `addToRecent()` to use database
+  - Use `ConfigsRepository.updateLastUsed()` (implemented in repository)
+- [x] 6.5 Migrate `getRecent()` to use database
+  - Replace localStorage read with `ConfigsRepository.findRecent(10)` (src/app/api/configs/recent/route.ts)
+- [x] 6.6 Implement localStorage migration endpoint
+  - Create `/api/configs/migrate` POST endpoint (src/app/api/configs/migrate/route.ts)
   - Accept localStorage data in request body
   - Bulk insert into database with duplicate handling
   - Return migration status
@@ -127,12 +154,15 @@
   - Report schema version
   - Report database size
   - Return health status (healthy/degraded/error)
-- [ ] 7.2 Update `/api/agents` GET endpoint
+  - (Note: `getDatabaseHealth()` method exists in client.ts:145, but no API endpoint yet)
+- [~] 7.2 Update `/api/agents` GET endpoint
   - Query from database if `ENABLE_PERSISTENCE` is true
   - Fall back to in-memory if database fails
-- [ ] 7.3 Update `/api/agents/history` GET endpoint
+  - (Note: Currently uses in-memory only via sessionManager.getAllActiveAgents())
+- [~] 7.3 Update `/api/agents/history` GET endpoint
   - Query historical agents from database
   - Include message counts and metrics
+  - (Note: Currently uses in-memory only via sessionManager.getHistory())
 - [ ] 7.4 Create `/api/agents/[id]/messages` GET endpoint
   - Support pagination (limit, offset query params)
   - Return messages from database
@@ -144,13 +174,16 @@
   - Run retention cleanup every 24 hours
   - Delete messages older than `MESSAGE_RETENTION_DAYS` setting
   - Log cleanup statistics
+  - (Note: `MessagesRepository.deleteOlderThan()` method exists but no job scheduler yet)
 - [ ] 8.2 Add database vacuum on startup
   - Run `VACUUM` command to reclaim deleted space
   - Log vacuum duration
+  - (Note: `vacuumDatabase()` method exists in client.ts:127 but not called on startup)
 - [ ] 8.3 Implement automatic backup on startup
   - Copy `database.sqlite` to `database.sqlite.backup`
   - Keep last 3 backups (rotate old ones)
   - Log backup status
+  - (Note: `backupDatabase()` method exists in client.ts:105 but not called on startup)
 
 ## 9. Testing & Validation
 
