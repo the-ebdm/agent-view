@@ -75,7 +75,7 @@
 
 - [x] 8.1 Create `src/app/api/slash-command/route.ts` for command execution
 - [x] 8.2 Implement POST to execute slash commands from `.claude/commands/`
-- [x] 8.3 Add command whitelist for security (only openspec:*)
+- [x] 8.3 Add command whitelist for security (only openspec:\*)
 - [x] 8.4 Capture stdout/stderr from command execution
 - [x] 8.5 Implement command timeout (30s)
 - [x] 8.6 Add audit logging for command execution
@@ -286,57 +286,19 @@
 - [ ] 29.5 Add request debouncing for validation (500ms)
 - [ ] 29.6 Cache API responses (30s TTL)
 
-## 30. Testing
+## 30. Documentation
 
-- [ ] 30.1 Write unit tests for CLI wrapper functions
-- [ ] 30.2 Write unit tests for markdown parser
-- [ ] 30.3 Write unit tests for file operations
-- [ ] 30.4 Write component tests for card components
-- [ ] 30.5 Write component tests for modal and editor
-- [ ] 30.6 Write integration tests for validation flow
-- [ ] 30.7 Write E2E test for create → edit → archive workflow
+- [ ] 30.1 Document OpenSpec API routes in README
+- [ ] 30.2 Add inline code comments for complex logic
+- [ ] 30.3 Create user guide for OpenSpec UI features
+- [ ] 30.4 Document slash command integration
+- [ ] 30.5 Add troubleshooting section for common issues
+- [ ] 30.6 Update project.md with Phase 3 completion status
 
-## 31. Documentation
+## 31. Deployment
 
-- [ ] 31.1 Document OpenSpec API routes in README
-- [ ] 31.2 Add inline code comments for complex logic
-- [ ] 31.3 Create user guide for OpenSpec UI features
-- [ ] 31.4 Document slash command integration
-- [ ] 31.5 Add troubleshooting section for common issues
-- [ ] 31.6 Update project.md with Phase 3 completion status
-
-## 32. Mobile Testing
-
-- [ ] 32.1 Test dashboard on iPhone 13 mini (smallest target)
-- [ ] 32.2 Test modal interactions on mobile
-- [ ] 32.3 Test editor on mobile keyboard
-- [ ] 32.4 Test swipe gestures for tab switching
-- [ ] 32.5 Validate touch target sizes (min 44x44px)
-- [ ] 32.6 Test via Tailscale remote access
-
-## 33. Accessibility
-
-- [ ] 33.1 Add ARIA labels to interactive elements
-- [ ] 33.2 Ensure keyboard navigation works for all actions
-- [ ] 33.3 Test with screen reader (VoiceOver/NVDA)
-- [ ] 33.4 Verify color contrast meets WCAG AA standards
-- [ ] 33.5 Add focus indicators for keyboard navigation
-- [ ] 33.6 Implement skip links for modal content
-
-## 34. Security Hardening
-
-- [ ] 34.1 Validate all file paths to prevent directory traversal
-- [ ] 34.2 Sanitize markdown content to prevent XSS
-- [ ] 34.3 Rate limit API endpoints (10 req/sec for validation, 100 req/min for files)
-- [ ] 34.4 Add CSRF protection to POST endpoints
-- [ ] 34.5 Whitelist slash commands (only openspec:*)
-- [ ] 34.6 Audit log all file write operations
-
-## 35. Deployment
-
-- [ ] 35.1 Test full workflow on staging environment
-- [ ] 35.2 Run `openspec validate --strict` on all changes
-- [ ] 35.3 Deploy to microk8s cluster (heimdall/odin)
-- [ ] 35.4 Verify Tailscale remote access works
-- [ ] 35.5 Test on mobile device via Tailscale
-- [ ] 35.6 Archive Phase 3 change after successful deployment
+- [ ] 31.1 Test full workflow on staging environment
+- [ ] 31.2 Run `openspec validate --strict` on all changes
+- [ ] 31.4 Verify Tailscale remote access works
+- [ ] 31.5 Test on mobile device via Tailscale
+- [ ] 31.6 Archive Phase 3 change after successful deployment
