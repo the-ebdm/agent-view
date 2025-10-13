@@ -124,7 +124,7 @@ export function SlashCommandButton({
       switch (command) {
         case 'proposal':
           prompt = buildProposalPrompt(id, projectDirectory);
-          agentName = `Proposal: ${id}`;
+          agentName = `Proposal - ${id}`;
           break;
 
         case 'apply':
@@ -134,12 +134,12 @@ export function SlashCommandButton({
             name: id,
           };
           prompt = buildApplyChangePrompt(context, projectDirectory);
-          agentName = `Apply: ${context.name}`;
+          agentName = `Apply - ${context.name}`;
           break;
 
         case 'archive':
           prompt = buildArchivePrompt(id, projectDirectory, skipSpecs, autoYes);
-          agentName = `Archive: ${id}`;
+          agentName = `Archive - ${id}`;
           break;
 
         default:
