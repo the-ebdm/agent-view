@@ -132,6 +132,7 @@ export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: Agen
   const isPaused = agent.lifecycleState === 'paused';
 
   return (
+    <>
     <Card
       className={`p-4 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] ${
         isRunning ? 'ring-2 ring-green-400 ring-offset-2' : ''
@@ -305,5 +306,6 @@ export function AgentCard({ agent, metrics, onOpenModal, onOpenApprovals }: Agen
         }}
       />
     )}
+    </>
   );
 }

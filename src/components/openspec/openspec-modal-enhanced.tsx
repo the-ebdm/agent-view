@@ -36,7 +36,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
   const [viewMode, setViewMode] = useState<ViewMode>('view');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [_isSaving, setIsSaving] = useState(false);
 
   // Validation state
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>('pending');
@@ -50,7 +50,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
   const taskStats = useMemo(() => {
     if (!isMultiFile || typeof content !== 'object') return null;
 
-    const tasksContent = (content as any).tasks || '';
+    const tasksContent = (content as { tasks?: string }).tasks || '';
     const lines = tasksContent.split('\n');
 
     // Count checkbox patterns: [x] for completed, [ ] for incomplete
@@ -64,7 +64,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
   const changeContext = useMemo((): OpenSpecChangeContext | undefined => {
     if (!isChange || typeof content !== 'object') return undefined;
 
-    const contentObj = content as any;
+    const contentObj = content as { proposal?: string; design?: string; tasks?: string };
 
     return {
       changeId: entity.id,
@@ -117,7 +117,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
             setValidationStatus((changeEntity as ChangeProposal).validationStatus);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message || 'Failed to load content');
       } finally {
         setLoading(false);
@@ -125,7 +125,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
     }
 
     fetchContent();
-  }, [entity, projectDirectory]);
+  }, [entity, projectDirectory, changeEntity]);
 
   // Close on Escape key
   useEffect(() => {
@@ -143,7 +143,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
   const handleContentChange = useCallback((newContent: string) => {
     if (isMultiFile) {
       setContent(prev => ({
-        ...(prev as any),
+        ...(prev as { proposal?: string; design?: string; tasks?: string }),
         [activeTab]: newContent,
       }));
     } else {
@@ -173,7 +173,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
       if (!response.ok) throw new Error('Failed to save');
 
       onUpdate?.();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Save error:', err);
       throw err;
     } finally {
@@ -198,7 +198,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
       const result = await response.json();
       setValidationStatus(result.valid ? 'valid' : 'invalid');
       setValidationErrors(result.errors || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setValidationStatus('invalid');
       setValidationErrors([{ message: err.message || 'Validation error', severity: 'error' }]);
     }
@@ -207,7 +207,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
   // Get current tab content
   const getCurrentContent = useCallback((): string => {
     if (isMultiFile) {
-      return (content as any)[activeTab] || '';
+      return (content as { [key: string]: string })[activeTab] || '';
     }
     return content as string;
   }, [content, activeTab, isMultiFile]);
@@ -232,7 +232,7 @@ export function OpenSpecModalEnhanced({ entity, onClose, onUpdate, projectDirect
 
     // Task checklist for tasks tab
     if (activeTab === 'tasks' && isMultiFile) {
-      const tasksContent = (content as any).tasks || '';
+      const tasksContent = (content as { tasks?: string }).tasks || '';
 
       if (viewMode === 'edit') {
         return (

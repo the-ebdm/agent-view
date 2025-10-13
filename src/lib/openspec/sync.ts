@@ -17,10 +17,10 @@
 import path from 'path';
 import { listSpecs, listChanges, listArchives } from './cli-wrapper';
 import { readOpenSpecFile, exists } from './fs-operations';
-import { getGitTimestamp, getDirectoryTimestamp, getGitCreationTimestamp, getGitSHA } from './git-utils';
+import { getGitTimestamp, getDirectoryTimestamp, getGitCreationTimestamp } from './git-utils';
 import { parseSpecMarkdown, parseTasksMarkdown } from './parser';
 import { getOpenSpecRepository } from '../database/repositories/openspec';
-import type { CapabilitySpec, ChangeProposal, ArchivedChange, ChangeStatus } from '@/types/openspec';
+import type { ChangeStatus } from '@/types/openspec';
 
 /**
  * Sync result statistics.
@@ -79,7 +79,7 @@ let syncInProgress = false;
  *   await syncFromFilesystem();
  * }
  */
-export async function syncFromFilesystem(options: SyncOptions = {}): Promise<SyncResult> {
+export async function syncFromFilesystem(_options: SyncOptions = {}): Promise<SyncResult> {
   const startTime = Date.now();
 
   // Prevent concurrent syncs
@@ -291,19 +291,19 @@ async function syncChanges(
 
         try {
           proposalContent = await readOpenSpecFile(proposalPath);
-        } catch (e) {
+        } catch {
           // proposal.md is optional
         }
 
         try {
           designContent = await readOpenSpecFile(designPath);
-        } catch (e) {
+        } catch {
           // design.md is optional
         }
 
         try {
           tasksContent = await readOpenSpecFile(tasksPath);
-        } catch (e) {
+        } catch {
           // tasks.md is optional
         }
 

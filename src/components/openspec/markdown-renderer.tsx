@@ -20,7 +20,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
     <div className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
       <ReactMarkdown
         components={{
-          code({ node, inline, className, children, ...props }: any) {
+          code({ node: _node, inline, className, children, ..._props }: unknown) {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
 
@@ -29,12 +29,12 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
                 style={vscDarkPlus}
                 language={language}
                 PreTag="div"
-                {...props}
+                {..._props}
               >
                 {String(children).replace(/\n$/, '')}
               </SyntaxHighlighter>
             ) : (
-              <code className={`${className} bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-200 px-1 py-0.5 rounded text-sm`} {...props}>
+              <code className={`${className} bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-200 px-1 py-0.5 rounded text-sm`} {..._props}>
                 {children}
               </code>
             );
@@ -57,7 +57,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
           ol: ({ children }) => (
             <ol className="list-decimal list-outside ml-5 space-y-1 mb-3 text-gray-700 dark:text-gray-300">{children}</ol>
           ),
-          li: ({ children, ...props }: any) => {
+          li: ({ children }: unknown) => {
             // Check if this is a task list item
             const childrenArray = React.Children.toArray(children);
             const firstChild = childrenArray[0];

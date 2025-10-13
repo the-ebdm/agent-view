@@ -84,11 +84,11 @@ export async function POST(request: NextRequest) {
     const created = configsRepo.create(config);
 
     return NextResponse.json({ config: created }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API] Failed to create config:', error);
 
     // Handle unique constraint violation
-    if (error.message?.includes('already exists')) {
+    if (error instanceof Error ? error.message : String(error)?.includes('already exists')) {
       return NextResponse.json(
         { error: 'Configuration with this name and directory already exists' },
         { status: 409 }

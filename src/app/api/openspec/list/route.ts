@@ -9,7 +9,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { listSpecs, listChanges, listArchives } from '@/lib/openspec/cli-wrapper';
 import { getOpenSpecRepository } from '@/lib/database/repositories/openspec';
 import { syncFromFilesystem, needsSync, getSyncStatus } from '@/lib/openspec/sync';
-import type { ListEntitiesResponse } from '@/types/openspec';
 
 export async function GET(request: NextRequest) {
   try {
@@ -54,12 +53,12 @@ export async function GET(request: NextRequest) {
       console.error('[OpenSpec API] Database query failed, falling back to filesystem:', dbError);
       return await fallbackToFilesystem(type);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[OpenSpec API] Failed to list OpenSpec entities:', error);
 
     return NextResponse.json(
       {
-        error: error.message || 'Failed to list OpenSpec entities',
+        error: error instanceof Error ? error.message : String(error) || 'Failed to list OpenSpec entities',
         specs: [],
         changes: [],
         archives: [],

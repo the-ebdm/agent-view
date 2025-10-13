@@ -1,4 +1,4 @@
-import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem, ToolPermission, AgentMetrics, AgentLifecycleState, PendingApproval, ToolName } from '@/types/agent';
+import type { AgentSession, AgentMessage, AgentStatus, AgentHistoryItem, ToolPermission, AgentMetrics, PendingApproval, ToolName } from '@/types/agent';
 import { generateAgentName, validateAgentName, ensureUniqueName } from './agent-names';
 import { getDefaultToolPermission, validateToolPermission } from './tool-permissions';
 import { getAgentsRepository, isPersistenceEnabled } from './database';
@@ -107,24 +107,54 @@ class AgentSessionManager {
    * Load active agents from database on startup
    * Should be called once during server initialization
    */
-  hydrateFromDatabase(): void {
+  async hydrateFromDatabase(): Promise<void> {
     if (this.isHydrated || !isPersistenceEnabled()) {
       return;
     }
 
     try {
       const agentsRepo = getAgentsRepository();
+      const { getMessagesRepository } = await import('./database/repositories/messages');
+      const messagesRepo = getMessagesRepository();
+
       const dbAgents = agentsRepo.findActive();
 
-      console.log(`[AgentSessionManager] Hydrating ${dbAgents.length} active agents from database`);
+      console.log(`[AgentSessionManager] Session recovery: Found ${dbAgents.length} active agents to restore`);
+
+      let restoredCount = 0;
+      let skippedCount = 0;
+      const errors: string[] = [];
 
       for (const agent of dbAgents) {
-        // Add to both sessions and activeAgents maps
-        this.sessions.set(agent.id, agent);
-        this.activeAgents.set(agent.id, agent);
+        try {
+          // Load buffered messages for this agent
+          const messages = messagesRepo.findRecentByAgentId(agent.id, 100);
+          agent.messages = messages;
+
+          // Add to both sessions and activeAgents maps
+          this.sessions.set(agent.id, agent);
+          this.activeAgents.set(agent.id, agent);
+
+          restoredCount++;
+          console.log(`[AgentSessionManager] Restored agent ${agent.name} (${agent.id}) with ${messages.length} messages`);
+        } catch (error) {
+          skippedCount++;
+          const errorMsg = `Failed to restore agent ${agent.id}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          errors.push(errorMsg);
+          console.error(`[AgentSessionManager] ${errorMsg}`);
+        }
       }
 
       this.isHydrated = true;
+
+      // Log recovery statistics
+      console.log(`[AgentSessionManager] Session recovery complete:`);
+      console.log(`  - Agents restored: ${restoredCount}`);
+      console.log(`  - Agents skipped: ${skippedCount}`);
+      if (errors.length > 0) {
+        console.log(`  - Errors encountered: ${errors.length}`);
+        errors.forEach(err => console.log(`    * ${err}`));
+      }
     } catch (error) {
       console.error('[AgentSessionManager] Failed to hydrate from database:', error);
       // Continue - graceful degradation

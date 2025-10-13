@@ -4,7 +4,7 @@
  */
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ActiveAgentsDashboard } from '@/components/features/active-agents-dashboard';
 import { AgentSpawnModal } from '@/components/features/agent-spawn-modal';
@@ -36,11 +36,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const [selectedHistoryItem, setSelectedHistoryItem] = useState<string | null>(null);
 
   // Fetch project details
-  useEffect(() => {
-    fetchProject();
-  }, [projectId]);
-
-  const fetchProject = async () => {
+  const fetchProject = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/projects/${projectId}`);
@@ -54,11 +50,15 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchProject();
+  }, [fetchProject]);
 
   // Filter agents and history for this project
   const projectAgents = agents.filter(agent => agent.projectId === projectId);
-  const projectHistory = history.filter(item => {
+  const projectHistory = history.filter(_item => {
     // History items don't have projectId yet, so we'll show all for now
     // TODO: Add projectId to history items
     return true;

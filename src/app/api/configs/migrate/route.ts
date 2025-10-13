@@ -68,14 +68,15 @@ export async function POST(request: NextRequest) {
 
         configsRepo.create(configToImport);
         results.imported++;
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If config already exists (unique constraint), skip it
-        if (error.message?.includes('already exists')) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage?.includes('already exists')) {
           results.skipped++;
           results.errors.push(`Skipped "${config.name}": already exists`);
         } else {
           results.skipped++;
-          results.errors.push(`Failed to import "${config.name}": ${error.message}`);
+          results.errors.push(`Failed to import "${config.name}": ${errorMessage}`);
         }
       }
     }

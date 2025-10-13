@@ -65,7 +65,7 @@ export function OpenSpecSyncStatus() {
         clearTimeout(notificationTimeout);
       }
     };
-  }, [lastSyncResult]);
+  }, [lastSyncResult, clearSyncResult, notificationTimeout]);
 
   const handleSync = async () => {
     await triggerSync();

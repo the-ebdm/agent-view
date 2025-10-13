@@ -44,12 +44,12 @@ export async function GET(
       design: design.status === 'fulfilled' ? design.value : null,
       tasks: tasks.status === 'fulfilled' ? tasks.value : null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`Failed to get archive ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
-      { error: error.message || 'Failed to get archive' },
+      { error: error instanceof Error ? error.message : String(error) || 'Failed to get archive' },
       { status: 404 }
     );
   }

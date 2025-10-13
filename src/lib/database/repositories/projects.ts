@@ -166,7 +166,7 @@ export class ProjectsRepository {
     }
 
     try {
-      const row = this.findByIdStmt.get(id) as any;
+      const row = this.findByIdStmt.get(id) as unknown;
       return row ? this.mapRowToProject(row) : undefined;
     } catch (error) {
       console.error('[ProjectsRepository] Error finding project:', error);
@@ -184,7 +184,7 @@ export class ProjectsRepository {
     }
 
     try {
-      const row = this.findByDirectoryStmt.get(directory) as any;
+      const row = this.findByDirectoryStmt.get(directory) as unknown;
       return row ? this.mapRowToProject(row) : undefined;
     } catch (error) {
       console.error('[ProjectsRepository] Error finding project by directory:', error);
@@ -202,7 +202,7 @@ export class ProjectsRepository {
     }
 
     try {
-      const rows = this.findAllStmt.all() as any[];
+      const rows = this.findAllStmt.all() as unknown[];
       return rows.map(row => this.mapRowToProject(row));
     } catch (error) {
       console.error('[ProjectsRepository] Error finding all projects:', error);
@@ -220,7 +220,7 @@ export class ProjectsRepository {
     }
 
     try {
-      const rows = this.findActiveStmt.all() as any[];
+      const rows = this.findActiveStmt.all() as unknown[];
       return rows.map(row => this.mapRowToProject(row));
     } catch (error) {
       console.error('[ProjectsRepository] Error finding active projects:', error);
@@ -238,7 +238,7 @@ export class ProjectsRepository {
     }
 
     try {
-      const rows = this.findFavoritesStmt.all() as any[];
+      const rows = this.findFavoritesStmt.all() as unknown[];
       return rows.map(row => this.mapRowToProject(row));
     } catch (error) {
       console.error('[ProjectsRepository] Error finding favorite projects:', error);
@@ -362,23 +362,40 @@ export class ProjectsRepository {
   /**
    * Map database row to Project
    */
-  private mapRowToProject(row: any): Project {
+  private mapRowToProject(row: unknown): Project {
+    const r = row as {
+      id: string;
+      name: string;
+      directory: string;
+      description: string | null;
+      openspec_path: string | null;
+      default_tool_permissions: string | null;
+      is_favorite: number;
+      tags: string | null;
+      agent_count: number;
+      active_agent_count: number;
+      worktree_count: number;
+      last_used: number | null;
+      created_at: number;
+      updated_at: number;
+      archived_at: number | null;
+    };
     return {
-      id: row.id,
-      name: row.name,
-      directory: row.directory,
-      description: row.description || undefined,
-      openspecPath: row.openspec_path || undefined,
-      defaultToolPermissions: row.default_tool_permissions ? JSON.parse(row.default_tool_permissions) : undefined,
-      isFavorite: row.is_favorite === 1,
-      tags: row.tags ? JSON.parse(row.tags) : undefined,
-      agentCount: row.agent_count,
-      activeAgentCount: row.active_agent_count,
-      worktreeCount: row.worktree_count,
-      lastUsed: row.last_used || undefined,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      archivedAt: row.archived_at || undefined,
+      id: r.id,
+      name: r.name,
+      directory: r.directory,
+      description: r.description || undefined,
+      openspecPath: r.openspec_path || undefined,
+      defaultToolPermissions: r.default_tool_permissions ? JSON.parse(r.default_tool_permissions) : undefined,
+      isFavorite: r.is_favorite === 1,
+      tags: r.tags ? JSON.parse(r.tags) : undefined,
+      agentCount: r.agent_count,
+      activeAgentCount: r.active_agent_count,
+      worktreeCount: r.worktree_count,
+      lastUsed: r.last_used || undefined,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      archivedAt: r.archived_at || undefined,
     };
   }
 }

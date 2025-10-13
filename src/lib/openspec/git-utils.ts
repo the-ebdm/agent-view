@@ -227,7 +227,7 @@ export async function isFileInGit(filePath: string): Promise<boolean> {
       }
     );
     return stdout.trim().length > 0;
-  } catch (error) {
+  } catch {
     return false;
   }
 }

@@ -117,7 +117,7 @@ export class AgentsRepository {
     }
 
     try {
-      const row = this.findByIdStmt.get(id) as any;
+      const row = this.findByIdStmt.get(id) as unknown;
       return row ? this.mapRowToSession(row) : undefined;
     } catch (error) {
       console.error('[AgentsRepository] Error finding agent:', error);
@@ -135,7 +135,7 @@ export class AgentsRepository {
     }
 
     try {
-      const rows = this.findAllStmt.all() as any[];
+      const rows = this.findAllStmt.all() as unknown[];
       return rows.map(row => this.mapRowToSession(row));
     } catch (error) {
       console.error('[AgentsRepository] Error finding all agents:', error);
@@ -153,7 +153,7 @@ export class AgentsRepository {
     }
 
     try {
-      const rows = this.findActiveStmt.all() as any[];
+      const rows = this.findActiveStmt.all() as unknown[];
       return rows.map(row => this.mapRowToSession(row));
     } catch (error) {
       console.error('[AgentsRepository] Error finding active agents:', error);
@@ -218,21 +218,36 @@ export class AgentsRepository {
   /**
    * Map database row to AgentSession
    */
-  private mapRowToSession(row: any): AgentSession {
+  private mapRowToSession(row: unknown): AgentSession {
+    const r = row as {
+      id: string;
+      name: string;
+      prompt: string;
+      directory: string;
+      status: string;
+      lifecycle_state: string;
+      tool_permissions: string;
+      project_id: string | null;
+      worktree_id: string | null;
+      session_id: string | null;
+      start_time: number;
+      end_time: number | null;
+      paused_time: number | null;
+    };
     return {
-      id: row.id,
-      name: row.name,
-      prompt: row.prompt,
-      directory: row.directory,
-      status: row.status,
-      lifecycleState: row.lifecycle_state,
-      toolPermissions: JSON.parse(row.tool_permissions),
-      projectId: row.project_id || undefined,
-      worktreeId: row.worktree_id || undefined,
-      sessionId: row.session_id || undefined,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      pausedTime: row.paused_time,
+      id: r.id,
+      name: r.name,
+      prompt: r.prompt,
+      directory: r.directory,
+      status: r.status,
+      lifecycleState: r.lifecycle_state,
+      toolPermissions: JSON.parse(r.tool_permissions),
+      projectId: r.project_id || undefined,
+      worktreeId: r.worktree_id || undefined,
+      sessionId: r.session_id || undefined,
+      startTime: r.start_time,
+      endTime: r.end_time,
+      pausedTime: r.paused_time,
       messages: [], // Messages loaded separately via MessagesRepository
     };
   }

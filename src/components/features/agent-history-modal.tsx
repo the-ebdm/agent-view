@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { AgentOutputStream } from './agent-output-stream';
 import { AgentStatusBadge } from './agent-status-badge';
@@ -21,11 +21,7 @@ export function AgentHistoryModal({ historyItem, onClose }: AgentHistoryModalPro
   const isPromptLong = historyItem.prompt.length > 150;
 
   // Fetch messages for this agent
-  useEffect(() => {
-    fetchMessages();
-  }, [historyItem.id]);
-
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -43,7 +39,11 @@ export function AgentHistoryModal({ historyItem, onClose }: AgentHistoryModalPro
     } finally {
       setLoading(false);
     }
-  };
+  }, [historyItem.id]);
+
+  useEffect(() => {
+    fetchMessages();
+  }, [fetchMessages]);
 
   // Close on escape key
   useEffect(() => {
@@ -181,7 +181,7 @@ export function AgentHistoryModal({ historyItem, onClose }: AgentHistoryModalPro
         {/* Footer */}
         <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
           <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            This is a read-only view of the agent's message history
+            This is a read-only view of the agent&apos;s message history
           </p>
         </div>
       </div>

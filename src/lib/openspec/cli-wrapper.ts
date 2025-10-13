@@ -5,6 +5,8 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import fs from 'fs';
+import path from 'path';
 import type { CLIResult, CapabilitySpec, ChangeProposal, ArchivedChange } from '@/types/openspec';
 
 const execAsync = promisify(exec);
@@ -34,12 +36,13 @@ async function executeOpenSpecCommand(
       stderr: stderr.trim(),
       exitCode: 0,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { stdout?: string; stderr?: string; message?: string; code?: number };
     return {
       success: false,
-      stdout: error.stdout?.trim() || '',
-      stderr: error.stderr?.trim() || error.message,
-      exitCode: error.code || 1,
+      stdout: err.stdout?.trim() || '',
+      stderr: err.stderr?.trim() || err.message || 'Unknown error',
+      exitCode: err.code || 1,
     };
   }
 }
@@ -144,8 +147,6 @@ export async function listChanges(cwd?: string): Promise<ChangeProposal[]> {
 export async function listArchives(cwd?: string): Promise<ArchivedChange[]> {
   // OpenSpec CLI doesn't have --archived flag, use fs to read archive directory
   try {
-    const fs = require('fs');
-    const path = require('path');
     const baseDir = cwd || process.cwd();
     const archivePath = path.join(baseDir, 'openspec', 'changes', 'archive');
 
@@ -155,8 +156,8 @@ export async function listArchives(cwd?: string): Promise<ArchivedChange[]> {
 
     const entries = fs.readdirSync(archivePath, { withFileTypes: true });
     return entries
-      .filter((entry: any) => entry.isDirectory())
-      .map((entry: any) => ({
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => ({
         id: entry.name,
         type: 'archive' as const,
         name: entry.name.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
@@ -192,7 +193,7 @@ export async function validateChange(id: string) {
       }],
       timestamp: new Date(),
     };
-  } catch (error) {
+  } catch {
     return {
       valid: false,
       errors: [{
@@ -262,28 +263,4 @@ export async function executeSlashCommand(
 
   const fullCommand = `openspec ${commandName} ${args}`.trim();
   return executeOpenSpecCommand(fullCommand, 30000); // Longer timeout for workflow commands
-}
-
-/**
- * Helper: Derive change status from task completion
- */
-function deriveChangeStatus(tasks: any[]): 'pending' | 'in_progress' | 'completed' {
-  if (!tasks || tasks.length === 0) return 'pending';
-
-  const completedCount = tasks.filter(t => t.completed).length;
-  const progress = completedCount / tasks.length;
-
-  if (progress === 0) return 'pending';
-  if (progress === 1) return 'completed';
-  return 'in_progress';
-}
-
-/**
- * Helper: Calculate task completion percentage
- */
-function calculateProgress(tasks: any[]): number {
-  if (!tasks || tasks.length === 0) return 0;
-
-  const completedCount = tasks.filter(t => t.completed).length;
-  return Math.round((completedCount / tasks.length) * 100);
 }

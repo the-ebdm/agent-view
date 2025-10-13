@@ -18,7 +18,7 @@ export async function spawnAgent(params: SpawnAgentParams): Promise<SpawnAgentRe
 
   // Spawn agent with Claude Agent SDK
   // The SDK will auto-detect local Claude Code instance
-  const agentQuery = query({
+  const _agentQuery = query({
     prompt,
     options: {
       // Set working directory for the agent

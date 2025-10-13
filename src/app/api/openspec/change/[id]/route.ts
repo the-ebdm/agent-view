@@ -10,7 +10,6 @@ import {
   deleteOpenSpec,
   exists,
 } from '@/lib/openspec/fs-operations';
-import { showChange } from '@/lib/openspec/cli-wrapper';
 import path from 'path';
 
 export async function GET(
@@ -50,12 +49,12 @@ export async function GET(
       design: design.status === 'fulfilled' ? design.value : null,
       tasks: tasks.status === 'fulfilled' ? tasks.value : null,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`Failed to get change ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
-      { error: error.message || 'Failed to get change' },
+      { error: error instanceof Error ? error.message : String(error) || 'Failed to get change' },
       { status: 404 }
     );
   }
@@ -92,12 +91,12 @@ export async function PUT(
       success: true,
       message: `Change ${id} ${file} updated successfully`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`Failed to update change ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
-      { error: error.message || 'Failed to update change' },
+      { error: error instanceof Error ? error.message : String(error) || 'Failed to update change' },
       { status: 500 }
     );
   }
@@ -130,12 +129,12 @@ export async function DELETE(
       success: true,
       message: `Change ${id} deleted successfully`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`Failed to delete change ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
-      { error: error.message || 'Failed to delete change' },
+      { error: error instanceof Error ? error.message : String(error) || 'Failed to delete change' },
       { status: 500 }
     );
   }

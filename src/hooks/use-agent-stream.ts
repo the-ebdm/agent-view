@@ -49,7 +49,7 @@ export function useAgentStream(agentId: string | null): UseAgentStreamResult {
       }
     };
 
-    es.onerror = (event) => {
+    es.onerror = (_event) => {
       // Only treat as error if stream didn't complete gracefully
       if (!streamCompletedGracefully && es.readyState === EventSource.CLOSED) {
         setError('Connection lost');

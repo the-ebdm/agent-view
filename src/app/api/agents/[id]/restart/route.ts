@@ -36,7 +36,7 @@ export async function POST(
       if (text) {
         body = JSON.parse(text);
       }
-    } catch (e) {
+    } catch {
       // Empty body is fine
     }
 

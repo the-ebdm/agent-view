@@ -1,7 +1,7 @@
 import type { AgentMessage } from '@/types/agent';
 
 // SDK message can be any object from the Claude Agent SDK
-type SDKMessage = any;
+type SDKMessage = unknown;
 
 // Metadata extracted from SDK messages (session_id, etc.)
 export interface SDKMetadata {
@@ -13,10 +13,11 @@ export interface SDKMetadata {
  */
 export function extractSDKMetadata(sdkMessage: SDKMessage): SDKMetadata | null {
   // Look for system messages with session info
-  if (sdkMessage.type === 'system') {
+  const msg = sdkMessage as { type?: string; message?: { session_id?: string }; session_id?: string };
+  if (msg.type === 'system') {
     // The SDK's init message should contain session_id
     // Format: { type: 'system', message: { session_id: '...' } }
-    const sessionId = sdkMessage.message?.session_id || sdkMessage.session_id;
+    const sessionId = msg.message?.session_id || msg.session_id;
 
     if (sessionId) {
       console.log('[StreamHandler] Extracted session_id:', sessionId);
@@ -29,16 +30,29 @@ export function extractSDKMetadata(sdkMessage: SDKMessage): SDKMetadata | null {
 
 export function processSDKMessage(sdkMessage: SDKMessage): AgentMessage | null {
   const timestamp = Date.now();
+  const msg = sdkMessage as {
+    type?: string;
+    message?: {
+      content?: Array<{
+        type?: string;
+        text?: string;
+        name?: string;
+        input?: Record<string, unknown>;
+        content?: string | Array<{ text?: string }>;
+      }>;
+    };
+    error?: { message?: string };
+  };
 
   // Handle system messages (init, etc.) - skip these for message stream
   // but metadata is extracted separately
-  if (sdkMessage.type === 'system') {
+  if (msg.type === 'system') {
     return null;
   }
 
   // Handle assistant messages from the SDK
-  if (sdkMessage.type === 'assistant' && sdkMessage.message?.content) {
-    const content = sdkMessage.message.content;
+  if (msg.type === 'assistant' && msg.message?.content) {
+    const content = msg.message.content;
 
     // Process each content block
     for (const block of content) {
@@ -65,8 +79,8 @@ export function processSDKMessage(sdkMessage: SDKMessage): AgentMessage | null {
   }
 
   // Handle user messages (which might contain tool results)
-  if (sdkMessage.type === 'user' && sdkMessage.message?.content) {
-    const content = sdkMessage.message.content;
+  if (msg.type === 'user' && msg.message?.content) {
+    const content = msg.message.content;
 
     for (const block of content) {
       // Handle tool result blocks
@@ -76,7 +90,7 @@ export function processSDKMessage(sdkMessage: SDKMessage): AgentMessage | null {
           content: typeof block.content === 'string'
             ? block.content
             : Array.isArray(block.content)
-            ? block.content.map(c => c.text || c).join('\n')
+            ? block.content.map(c => (typeof c === 'object' && c && 'text' in c ? c.text : c) as string).join('\n')
             : JSON.stringify(block.content),
           timestamp,
         };
@@ -85,10 +99,10 @@ export function processSDKMessage(sdkMessage: SDKMessage): AgentMessage | null {
   }
 
   // Handle errors
-  if (sdkMessage.type === 'error') {
+  if (msg.type === 'error') {
     return {
       type: 'error',
-      content: sdkMessage.error?.message || sdkMessage.message || 'Unknown error',
+      content: msg.error?.message || (typeof msg.message === 'string' ? msg.message : 'Unknown error'),
       timestamp,
     };
   }
@@ -108,10 +122,14 @@ export async function* streamAgentMessages(
   try {
     for await (const message of agentQuery) {
       const sdkMessage = message as SDKMessage;
+      const msg = sdkMessage as {
+        type?: string;
+        message?: { content?: Array<unknown> };
+      };
 
       // Debug: log the message type
-      if (sdkMessage.type === 'user' || sdkMessage.type === 'assistant') {
-        console.log('[StreamHandler] Processing:', sdkMessage.type, 'with', sdkMessage.message?.content?.length || 0, 'content blocks');
+      if (msg.type === 'user' || msg.type === 'assistant') {
+        console.log('[StreamHandler] Processing:', msg.type, 'with', msg.message?.content?.length || 0, 'content blocks');
       }
 
       // Extract metadata first (for system messages)

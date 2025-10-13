@@ -5,7 +5,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { useAgents } from "@/contexts/active-agents-context";
+import { useActiveAgents } from "@/contexts/active-agents-context";
 import type { AgentSession } from "@/types/agent";
 
 interface ForkAgentModalProps {
@@ -15,7 +15,7 @@ interface ForkAgentModalProps {
 }
 
 export function ForkAgentModal({ agent, onClose, onSuccess }: ForkAgentModalProps) {
-  const { refresh } = useAgents();
+  const { refreshAgents: refresh } = useActiveAgents();
   const [prompt, setPrompt] = useState("");
   const [name, setName] = useState(`${agent.name} - fork`);
   const [isCreating, setIsCreating] = useState(false);
@@ -85,7 +85,7 @@ export function ForkAgentModal({ agent, onClose, onSuccess }: ForkAgentModalProp
           <div>
             <h2 className="text-lg font-semibold">Fork Agent</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Create a new agent from "{agent.name}"
+              Create a new agent from &quot;{agent.name}&quot;
             </p>
           </div>
           <Button
@@ -141,7 +141,7 @@ export function ForkAgentModal({ agent, onClose, onSuccess }: ForkAgentModalProp
                   disabled={isCreating}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  The fork will start with the full conversation history of "{agent.name}" but follow this new direction.
+                  The fork will start with the full conversation history of &quot;{agent.name}&quot; but follow this new direction.
                 </p>
               </div>
 
@@ -151,7 +151,7 @@ export function ForkAgentModal({ agent, onClose, onSuccess }: ForkAgentModalProp
                   <div className="text-sm text-blue-800 dark:text-blue-200">
                     <div className="font-semibold">How Forking Works</div>
                     <div className="text-xs mt-1">
-                      Creates a new independent agent with full conversation history from "{agent.name}".
+                      Creates a new independent agent with full conversation history from &quot;{agent.name}&quot;.
                       Both agents will exist separately.
                     </div>
                   </div>

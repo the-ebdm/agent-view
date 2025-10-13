@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       duration: Date.now() - startTime,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Slash Command API] Error:', error);
 
     // Log error
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: 'Command execution failed',
-        message: error.message || 'Unknown error',
+        message: error instanceof Error ? error.message : String(error) || 'Unknown error',
       },
       { status: 500 }
     );
@@ -167,13 +167,13 @@ export async function GET(req: NextRequest) {
       totalExecutions: auditLog.length,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Slash Command API GET] Error:', error);
 
     return NextResponse.json(
       {
         error: 'Failed to get command info',
-        message: error.message || 'Unknown error',
+        message: error instanceof Error ? error.message : String(error) || 'Unknown error',
       },
       { status: 500 }
     );

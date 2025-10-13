@@ -55,7 +55,7 @@ export function OpenSpecSection({ projectDirectory, openspecPath }: OpenSpecSect
       setSpecs(data.specs || []);
       setChanges(data.changes || []);
       setArchives(data.archives || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || 'Failed to load OpenSpec data');
     } finally {
       setLoading(false);
@@ -171,7 +171,7 @@ export function OpenSpecSection({ projectDirectory, openspecPath }: OpenSpecSect
           {/* Filter */}
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as any)}
+            onChange={(e) => setFilterType(e.target.value as 'all' | 'spec' | 'change' | 'archive')}
             className="px-4 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-transparent transition-all cursor-pointer"
           >
             <option value="all">All Types</option>

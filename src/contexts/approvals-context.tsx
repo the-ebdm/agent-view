@@ -30,7 +30,7 @@ interface ApprovalsContextValue {
 const ApprovalsContext = createContext<ApprovalsContextValue | undefined>(undefined);
 
 const POLL_INTERVAL = 3000; // 3 seconds
-const MAX_AGE = 10000; // Consider data stale after 10 seconds
+const _MAX_AGE = 10000; // Consider data stale after 10 seconds
 
 export function ApprovalsProvider({ children }: { children: React.ReactNode }) {
   const [approvalsMap, setApprovalsMap] = useState<Map<string, AgentApprovals>>(new Map());
@@ -153,7 +153,7 @@ export function useApprovals(agentId: string) {
     return () => {
       clearInterval(interval);
     };
-  }, [agentId, context.getApprovals, context.refreshApprovals]);
+  }, [agentId, context]);
 
   return {
     approvalCount: approvals?.count || 0,

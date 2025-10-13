@@ -108,7 +108,7 @@ export function SlashCommandButton({
 
     try {
       await spawnOpenSpecAgent(id);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const errorText = err.message || "Failed to spawn agent";
       setError(errorText);
       onError?.(errorText);
@@ -194,7 +194,7 @@ export function SlashCommandButton({
       setTimeout(() => {
         setShowDialog(false);
       }, 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       throw err;
     }
   };

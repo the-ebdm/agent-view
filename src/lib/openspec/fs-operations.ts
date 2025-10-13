@@ -84,11 +84,12 @@ export async function readOpenSpecFile(filePath: string, projectDir?: string): P
   try {
     const content = await fs.readFile(validPath, 'utf-8');
     return content;
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string };
+    if (err.code === 'ENOENT') {
       throw new Error(`File not found: ${filePath}`);
     }
-    throw new Error(`Failed to read file: ${error.message}`);
+    throw new Error(`Failed to read file: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -111,8 +112,9 @@ export async function writeOpenSpecFile(
 
     // Write file
     await fs.writeFile(validPath, content, 'utf-8');
-  } catch (error: any) {
-    throw new Error(`Failed to write file: ${error.message}`);
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    throw new Error(`Failed to write file: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -130,11 +132,12 @@ export async function listOpenSpecFiles(directory: string, projectDir?: string):
     return entries
       .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
       .map((entry) => path.join(directory, entry.name));
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string };
+    if (err.code === 'ENOENT') {
       return [];
     }
-    throw new Error(`Failed to list files: ${error.message}`);
+    throw new Error(`Failed to list files: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -152,11 +155,12 @@ export async function listOpenSpecDirectories(directory: string, projectDir?: st
     return entries
       .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
       .map((entry) => path.join(directory, entry.name));
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string };
+    if (err.code === 'ENOENT') {
       return [];
     }
-    throw new Error(`Failed to list directories: ${error.message}`);
+    throw new Error(`Failed to list directories: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -180,8 +184,9 @@ export async function createChangeDirectory(changeId: string, projectDir?: strin
     await writeOpenSpecFile(path.join(changePath, 'proposal.md'), proposalTemplate, projectDir);
     await writeOpenSpecFile(path.join(changePath, 'design.md'), designTemplate, projectDir);
     await writeOpenSpecFile(path.join(changePath, 'tasks.md'), tasksTemplate, projectDir);
-  } catch (error: any) {
-    throw new Error(`Failed to create change directory: ${error.message}`);
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    throw new Error(`Failed to create change directory: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -200,8 +205,9 @@ export async function moveToArchive(changeId: string, projectDir?: string): Prom
 
     // Move directory
     await fs.rename(sourcePath, destPath);
-  } catch (error: any) {
-    throw new Error(`Failed to archive change: ${error.message}`);
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    throw new Error(`Failed to archive change: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -221,11 +227,12 @@ export async function deleteOpenSpec(filePath: string, projectDir?: string): Pro
     } else {
       await fs.unlink(validPath);
     }
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+  } catch (error: unknown) {
+    const err = error as { code?: string; message?: string };
+    if (err.code === 'ENOENT') {
       return; // Already deleted
     }
-    throw new Error(`Failed to delete: ${error.message}`);
+    throw new Error(`Failed to delete: ${err.message || 'Unknown error'}`);
   }
 }
 
@@ -272,7 +279,8 @@ export async function getFileStats(filePath: string, projectDir?: string) {
       isDirectory: stats.isDirectory(),
       isFile: stats.isFile(),
     };
-  } catch (error: any) {
-    throw new Error(`Failed to get file stats: ${error.message}`);
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    throw new Error(`Failed to get file stats: ${err.message || 'Unknown error'}`);
   }
 }

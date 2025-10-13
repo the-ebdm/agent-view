@@ -21,7 +21,7 @@ export async function GET(
     try {
       const specData = await showSpec(id);
       return NextResponse.json(specData);
-    } catch (cliError) {
+    } catch {
       // Fallback to direct file read
       const specPath = path.join('specs', `${id}.md`);
       const content = await readOpenSpecFile(specPath, directory || undefined);
@@ -33,12 +33,12 @@ export async function GET(
         content,
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`Failed to get spec ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
-      { error: error.message || 'Failed to get spec' },
+      { error: error instanceof Error ? error.message : String(error) || 'Failed to get spec' },
       { status: 404 }
     );
   }
@@ -68,12 +68,12 @@ export async function PUT(
       success: true,
       message: `Spec ${id} updated successfully`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     const resolvedParams = await params;
     console.error(`Failed to update spec ${resolvedParams.id}:`, error);
 
     return NextResponse.json(
-      { error: error.message || 'Failed to update spec' },
+      { error: error instanceof Error ? error.message : String(error) || 'Failed to update spec' },
       { status: 500 }
     );
   }

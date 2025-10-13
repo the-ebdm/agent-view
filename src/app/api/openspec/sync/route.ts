@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncFromFilesystem } from '@/lib/openspec/sync';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     console.log('[OpenSpec API] Manual sync triggered');
 
@@ -32,14 +32,14 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[OpenSpec API] Sync failed:', error);
 
     return NextResponse.json(
       {
         success: false,
         message: 'Sync failed',
-        error: error.message || 'Unknown error',
+        error: error instanceof Error ? error.message : String(error) || 'Unknown error',
       },
       { status: 500 }
     );
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/openspec/sync - Get sync status
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { getSyncStatus } = await import('@/lib/openspec/sync');
     const status = getSyncStatus();
@@ -63,12 +63,12 @@ export async function GET(request: NextRequest) {
         archives: status.archivesCount,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[OpenSpec API] Failed to get sync status:', error);
 
     return NextResponse.json(
       {
-        error: error.message || 'Failed to get sync status',
+        error: error instanceof Error ? error.message : String(error) || 'Failed to get sync status',
       },
       { status: 500 }
     );

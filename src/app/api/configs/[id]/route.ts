@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     // Handle general updates (tags, name, etc.)
     const { tags, name, prompt, toolPreset, customTools } = body;
-    const updates: any = {};
+    const updates: Record<string, unknown> = {};
 
     if (tags !== undefined) updates.tags = tags;
     if (name !== undefined) updates.name = name;

@@ -10,6 +10,7 @@
 All TypeScript code must compile without errors using strict type checking rules. The `any` type should be avoided in favor of specific types or `unknown` when the type is truly unknown.
 
 **Acceptance Criteria**:
+
 - `npm run build` completes without TypeScript errors
 - No `@typescript-eslint/no-explicit-any` linting errors
 - No `@typescript-eslint/no-require-imports` linting errors
@@ -38,6 +39,7 @@ All TypeScript code must compile without errors using strict type checking rules
 All error handling in try-catch blocks must use proper TypeScript type guards instead of implicit `any` types. This ensures type safety and prevents runtime errors.
 
 **Acceptance Criteria**:
+
 - All catch blocks check `error instanceof Error` before accessing Error properties
 - Unknown errors are handled with appropriate type narrowing
 - No implicit `any` in error handling code
@@ -58,6 +60,7 @@ All error handling in try-catch blocks must use proper TypeScript type guards in
 All module imports must use ES6 `import` syntax instead of CommonJS `require()` to maintain consistency and enable tree-shaking optimization.
 
 **Acceptance Criteria**:
+
 - No `require()` function calls in TypeScript files
 - All imports use `import { x } from 'y'` or `import x from 'y'` syntax
 - Dynamic imports use `await import('...')` when needed

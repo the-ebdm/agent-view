@@ -5,6 +5,11 @@
  */
 
 /**
+ * Tool permissions object structure
+ */
+export type ToolPermissions = Record<string, boolean | unknown>;
+
+/**
  * Project entity
  * Represents a software project that can contain multiple worktrees
  */
@@ -14,7 +19,7 @@ export interface Project {
   directory: string;
   description?: string;
   openspecPath?: string;
-  defaultToolPermissions?: Record<string, any>;
+  defaultToolPermissions?: ToolPermissions;
   isFavorite: boolean;
   tags?: string[];
   agentCount: number;
@@ -52,7 +57,7 @@ export interface CreateProjectInput {
   directory: string;
   description?: string;
   openspecPath?: string;
-  defaultToolPermissions?: Record<string, any>;
+  defaultToolPermissions?: ToolPermissions;
   isFavorite?: boolean;
   tags?: string[];
 }
@@ -64,7 +69,7 @@ export interface UpdateProjectInput {
   name?: string;
   description?: string;
   openspecPath?: string;
-  defaultToolPermissions?: Record<string, any>;
+  defaultToolPermissions?: ToolPermissions;
   isFavorite?: boolean;
   tags?: string[];
   archivedAt?: number;

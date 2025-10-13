@@ -68,7 +68,7 @@ function groupMessages(messages: AgentMessage[]): MessageGroup[] {
   const groups: MessageGroup[] = [];
 
   // First pass: pair tool_use with tool_result
-  const pairedTools: Array<{ toolUse: AgentMessage; toolResult?: AgentMessage }> = [];
+  const _pairedTools: Array<{ toolUse: AgentMessage; toolResult?: AgentMessage }> = [];
   const toolUseQueue: AgentMessage[] = [];
   const toolResultQueue: AgentMessage[] = [];
 

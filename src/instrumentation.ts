@@ -16,10 +16,26 @@ export async function register() {
       await initializeDatabase();
       console.log('[Instrumentation] Database initialized successfully');
 
-      // Hydrate session manager with active agents from database
-      const { sessionManager } = await import('./lib/agent-session-manager');
-      sessionManager.hydrateFromDatabase();
-      console.log('[Instrumentation] Session manager hydrated from database');
+      // Check database health
+      const { checkDatabaseHealth } = await import('./lib/database');
+      const healthStatus = checkDatabaseHealth();
+      if (healthStatus.healthy) {
+        console.log('[Instrumentation] Database health check: HEALTHY');
+        console.log(`  - Schema version: ${healthStatus.schemaVersion}`);
+      } else {
+        console.warn('[Instrumentation] Database health check: DEGRADED');
+        console.warn(`  - Issues: ${healthStatus.issues?.join(', ')}`);
+      }
+
+      // Session recovery (controlled by environment variable)
+      const enableRecovery = process.env.ENABLE_SESSION_RECOVERY !== 'false'; // Default: true
+      if (enableRecovery) {
+        const { sessionManager } = await import('./lib/agent-session-manager');
+        await sessionManager.hydrateFromDatabase();
+        console.log('[Instrumentation] Session recovery enabled and completed');
+      } else {
+        console.log('[Instrumentation] Session recovery disabled (ENABLE_SESSION_RECOVERY=false)');
+      }
     } catch (error) {
       console.error('[Instrumentation] Failed to initialize database:', error);
       // Don't throw - allow server to start even if database fails

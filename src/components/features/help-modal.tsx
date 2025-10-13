@@ -79,7 +79,7 @@ export function HelpModal({ onClose }: HelpModalProps) {
             <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
               <p>1. <strong>Choose a template</strong> or start with a custom prompt</p>
               <p>2. <strong>Select tool permissions</strong> based on your task requirements</p>
-              <p>3. <strong>Click "Spawn Agent"</strong> to start the agent</p>
+              <p>3. <strong>Click &quot;Spawn Agent&quot;</strong> to start the agent</p>
               <p>4. <strong>Monitor progress</strong> in the active agents dashboard</p>
             </div>
           </div>

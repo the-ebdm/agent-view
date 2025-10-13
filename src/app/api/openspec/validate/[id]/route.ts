@@ -12,7 +12,7 @@ import crypto from 'crypto';
 
 // In-memory cache for validation results (30s TTL)
 interface CacheEntry {
-  result: any;
+  result: unknown;
   timestamp: number;
   contentHash: string;
 }
@@ -29,10 +29,6 @@ interface RateLimitEntry {
 const rateLimits = new Map<string, RateLimitEntry>();
 const RATE_LIMIT_WINDOW_MS = 1000; // 1 second
 const RATE_LIMIT_MAX = 10;
-
-// Debouncing: 500ms delay before validation
-const debouncePending = new Map<string, NodeJS.Timeout>();
-const DEBOUNCE_DELAY_MS = 500;
 
 /**
  * Check rate limit for validation requests
@@ -58,7 +54,7 @@ function checkRateLimit(id: string): boolean {
 /**
  * Get cached validation result if valid
  */
-function getCachedResult(id: string, contentHash: string): any | null {
+function getCachedResult(id: string, contentHash: string): unknown | null {
   const cached = validationCache.get(id);
 
   if (!cached) return null;
@@ -79,19 +75,12 @@ function getCachedResult(id: string, contentHash: string): any | null {
 /**
  * Set validation result in cache
  */
-function setCachedResult(id: string, contentHash: string, result: any): void {
+function setCachedResult(id: string, contentHash: string, result: unknown): void {
   validationCache.set(id, {
     result,
     contentHash,
     timestamp: Date.now(),
   });
-}
-
-/**
- * Compute content hash for caching
- */
-function computeContentHash(content: string): string {
-  return crypto.createHash('sha256').update(content).digest('hex');
 }
 
 /**
@@ -149,10 +138,10 @@ export async function POST(
       changeId: id,
       valid: validationResult.valid,
       errors: validationResult.errors.map(error => ({
-        message: error.message,
+        message: error instanceof Error ? error.message : String(error),
         severity: error.severity || 'error',
-        file: extractFileFromError(error.message),
-        line: extractLineFromError(error.message),
+        file: extractFileFromError(error instanceof Error ? error.message : String(error)),
+        line: extractLineFromError(error instanceof Error ? error.message : String(error)),
       })),
       errorCount: validationResult.errors.length,
       timestamp: validationResult.timestamp,
@@ -167,7 +156,7 @@ export async function POST(
         ? JSON.stringify(validationResult.errors.map(e => e.message))
         : null;
 
-      repo.updateChangeValidation(id, validationStatus as any, validationErrors || undefined);
+      repo.updateChangeValidation(id, validationStatus as 'pending' | 'validating' | 'valid' | 'invalid', validationErrors || undefined);
       console.log(`[Validation API] Stored validation result for ${id}: ${validationStatus}`);
     } catch (dbError) {
       console.warn('[Validation API] Failed to store validation result in database:', dbError);
@@ -181,13 +170,13 @@ export async function POST(
 
     return NextResponse.json(formattedResult);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Validation API] Error:', error);
 
     return NextResponse.json(
       {
         error: 'Validation failed',
-        message: error.message || 'Unknown error',
+        message: error instanceof Error ? error.message : String(error) || 'Unknown error',
       },
       { status: 500 }
     );
@@ -257,13 +246,13 @@ export async function GET(
       { status: 404 }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Validation API GET] Error:', error);
 
     return NextResponse.json(
       {
         error: 'Failed to get validation status',
-        message: error.message || 'Unknown error',
+        message: error instanceof Error ? error.message : String(error) || 'Unknown error',
       },
       { status: 500 }
     );

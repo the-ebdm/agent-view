@@ -52,7 +52,7 @@ function getSchemaVersion(db: Database.Database): number {
   try {
     const result = db.prepare('SELECT value FROM settings WHERE key = ?').get('schema_version') as { value: string } | undefined;
     return result ? parseInt(result.value, 10) : 0;
-  } catch (error) {
+  } catch {
     // Settings table doesn't exist yet
     return 0;
   }

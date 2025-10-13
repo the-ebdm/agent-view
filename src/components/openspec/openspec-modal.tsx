@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { MarkdownRenderer } from './markdown-renderer';
-import type { OpenSpecEntity, ChangeProposal } from '@/types/openspec';
+import type { OpenSpecEntity } from '@/types/openspec';
 
 interface OpenSpecModalProps {
   entity: OpenSpecEntity;
@@ -50,7 +50,7 @@ export function OpenSpecModal({ entity, onClose }: OpenSpecModalProps) {
             tasks: data.tasks || '',
           });
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         setError(err.message || 'Failed to load content');
       } finally {
         setLoading(false);

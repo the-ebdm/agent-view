@@ -242,7 +242,7 @@ class AgentExecutionManager {
         const description = this.generateDescription(toolName, input);
         const approvalId = sessionManager.addPendingApproval(
           id,
-          toolName as any, // ToolName type from types/agent.ts
+          toolName as import('@/types/agent').ToolName,
           description,
           input
         );

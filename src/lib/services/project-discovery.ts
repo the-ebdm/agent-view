@@ -5,7 +5,7 @@
  * when agents are spawned in directories.
  */
 
-import { basename, dirname } from 'path';
+import { basename } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { detectGitInfo } from '../git/worktree-utils';
 import { getProjectsRepository } from '../database/repositories/projects';
@@ -121,7 +121,7 @@ function inferProjectName(directory: string): string {
       if (packageJson.name) {
         return packageJson.name;
       }
-    } catch (error) {
+    } catch {
       // Ignore parse errors
     }
   }
@@ -144,7 +144,7 @@ function readProjectDescription(directory: string): string | undefined {
       if (firstLine) {
         return firstLine.replace(/^#+ /, '').trim().substring(0, 200);
       }
-    } catch (error) {
+    } catch {
       // Ignore read errors
     }
   }
@@ -159,7 +159,7 @@ function readProjectDescription(directory: string): string | undefined {
       if (firstLine) {
         return firstLine.replace(/^#+ /, '').trim().substring(0, 200);
       }
-    } catch (error) {
+    } catch {
       // Ignore read errors
     }
   }

@@ -6,7 +6,7 @@
  */
 
 import Database from 'better-sqlite3';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, statSync } from 'fs';
 import { dirname } from 'path';
 import { homedir } from 'os';
 
@@ -175,8 +175,7 @@ export function getDatabaseHealth(): {
     }
 
     // Get database file size
-    const fs = require('fs');
-    const stats = fs.statSync(getDatabasePath());
+    const stats = statSync(getDatabasePath());
     const sizeInBytes = stats.size;
 
     // Get schema version from settings table (if it exists)
@@ -184,7 +183,7 @@ export function getDatabaseHealth(): {
     try {
       const result = db.prepare('SELECT value FROM settings WHERE key = ?').get('schema_version') as { value: string } | undefined;
       schemaVersion = result ? parseInt(result.value, 10) : null;
-    } catch (error) {
+    } catch {
       // Settings table may not exist yet
       schemaVersion = 0;
     }

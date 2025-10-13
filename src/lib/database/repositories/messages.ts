@@ -109,7 +109,7 @@ export class MessagesRepository {
       const limit = options?.limit || 1000; // Default limit
       const offset = options?.offset || 0;
 
-      const rows = this.findByAgentIdStmt.all(agentId, limit, offset) as any[];
+      const rows = this.findByAgentIdStmt.all(agentId, limit, offset) as unknown[];
       return rows.map(row => this.mapRowToMessage(row));
     } catch (error) {
       console.error('[MessagesRepository] Error finding messages:', error);
@@ -128,7 +128,7 @@ export class MessagesRepository {
     }
 
     try {
-      const rows = this.findRecentByAgentIdStmt.all(agentId, limit) as any[];
+      const rows = this.findRecentByAgentIdStmt.all(agentId, limit) as unknown[];
       // Reverse to get chronological order (oldest first)
       return rows.reverse().map(row => this.mapRowToMessage(row));
     } catch (error) {
@@ -178,13 +178,20 @@ export class MessagesRepository {
   /**
    * Map database row to AgentMessage
    */
-  private mapRowToMessage(row: any): AgentMessage {
+  private mapRowToMessage(row: unknown): AgentMessage {
+    const r = row as {
+      type: string;
+      content: string;
+      timestamp: number;
+      tool_name: string | null;
+      tool_params: string | null;
+    };
     return {
-      type: row.type,
-      content: row.content,
-      timestamp: row.timestamp,
-      toolName: row.tool_name,
-      toolParams: row.tool_params ? JSON.parse(row.tool_params) : undefined,
+      type: r.type,
+      content: r.content,
+      timestamp: r.timestamp,
+      toolName: r.tool_name,
+      toolParams: r.tool_params ? JSON.parse(r.tool_params) : undefined,
     };
   }
 }

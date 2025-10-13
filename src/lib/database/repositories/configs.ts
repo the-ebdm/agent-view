@@ -95,8 +95,8 @@ export class ConfigsRepository {
         null // tags defaults to null
       );
       return config;
-    } catch (error: any) {
-      if (error.code === 'SQLITE_CONSTRAINT') {
+    } catch (error: unknown) {
+      if ((error as { code?: string }).code === 'SQLITE_CONSTRAINT') {
         throw new Error('Configuration with this name and directory already exists');
       }
       console.error('[ConfigsRepository] Error creating config:', error);
@@ -114,7 +114,7 @@ export class ConfigsRepository {
     }
 
     try {
-      const row = this.findByIdStmt.get(id) as any;
+      const row = this.findByIdStmt.get(id) as unknown;
       return row ? this.mapRowToConfig(row) : undefined;
     } catch (error) {
       console.error('[ConfigsRepository] Error finding config:', error);
@@ -133,7 +133,7 @@ export class ConfigsRepository {
     }
 
     try {
-      const rows = this.findAllStmt.all() as any[];
+      const rows = this.findAllStmt.all() as unknown[];
       return rows.map(row => this.mapRowToConfig(row));
     } catch (error) {
       console.error('[ConfigsRepository] Error finding all configs:', error);
@@ -151,7 +151,7 @@ export class ConfigsRepository {
     }
 
     try {
-      const rows = this.findRecentStmt.all(limit) as any[];
+      const rows = this.findRecentStmt.all(limit) as unknown[];
       return rows.map(row => this.mapRowToConfig(row));
     } catch (error) {
       console.error('[ConfigsRepository] Error finding recent configs:', error);
@@ -210,16 +210,26 @@ export class ConfigsRepository {
   /**
    * Map database row to SavedAgentConfig
    */
-  private mapRowToConfig(row: any): SavedAgentConfig {
+  private mapRowToConfig(row: unknown): SavedAgentConfig {
+    const r = row as {
+      id: string;
+      name: string;
+      prompt: string;
+      directory: string;
+      tool_preset: string;
+      custom_tools: string | null;
+      created_at: number;
+      last_used: number | null;
+    };
     return {
-      id: row.id,
-      name: row.name,
-      prompt: row.prompt,
-      directory: row.directory,
-      toolPreset: row.tool_preset,
-      customTools: row.custom_tools ? JSON.parse(row.custom_tools) : undefined,
-      createdAt: row.created_at,
-      lastUsed: row.last_used,
+      id: r.id,
+      name: r.name,
+      prompt: r.prompt,
+      directory: r.directory,
+      toolPreset: r.tool_preset,
+      customTools: r.custom_tools ? JSON.parse(r.custom_tools) : undefined,
+      createdAt: r.created_at,
+      lastUsed: r.last_used,
     };
   }
 }

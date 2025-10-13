@@ -148,7 +148,7 @@ export class WorktreesRepository {
     }
 
     try {
-      const row = this.findByIdStmt.get(id) as any;
+      const row = this.findByIdStmt.get(id) as unknown;
       return row ? this.mapRowToWorktree(row) : undefined;
     } catch (error) {
       console.error('[WorktreesRepository] Error finding worktree:', error);
@@ -166,7 +166,7 @@ export class WorktreesRepository {
     }
 
     try {
-      const row = this.findByDirectoryStmt.get(directory) as any;
+      const row = this.findByDirectoryStmt.get(directory) as unknown;
       return row ? this.mapRowToWorktree(row) : undefined;
     } catch (error) {
       console.error('[WorktreesRepository] Error finding worktree by directory:', error);
@@ -184,7 +184,7 @@ export class WorktreesRepository {
     }
 
     try {
-      const rows = this.findByProjectIdStmt.all(projectId) as any[];
+      const rows = this.findByProjectIdStmt.all(projectId) as unknown[];
       return rows.map(row => this.mapRowToWorktree(row));
     } catch (error) {
       console.error('[WorktreesRepository] Error finding worktrees by project:', error);
@@ -202,7 +202,7 @@ export class WorktreesRepository {
     }
 
     try {
-      const row = this.findMainWorktreeStmt.get(projectId) as any;
+      const row = this.findMainWorktreeStmt.get(projectId) as unknown;
       return row ? this.mapRowToWorktree(row) : undefined;
     } catch (error) {
       console.error('[WorktreesRepository] Error finding main worktree:', error);
@@ -220,7 +220,7 @@ export class WorktreesRepository {
     }
 
     try {
-      const rows = this.findAllStmt.all() as any[];
+      const rows = this.findAllStmt.all() as unknown[];
       return rows.map(row => this.mapRowToWorktree(row));
     } catch (error) {
       console.error('[WorktreesRepository] Error finding all worktrees:', error);
@@ -321,19 +321,32 @@ export class WorktreesRepository {
   /**
    * Map database row to Worktree
    */
-  private mapRowToWorktree(row: any): Worktree {
+  private mapRowToWorktree(row: unknown): Worktree {
+    const r = row as {
+      id: string;
+      project_id: string;
+      name: string;
+      directory: string;
+      branch: string | null;
+      is_main: number;
+      agent_count: number;
+      active_agent_count: number;
+      last_used: number | null;
+      created_at: number;
+      updated_at: number;
+    };
     return {
-      id: row.id,
-      projectId: row.project_id,
-      name: row.name,
-      directory: row.directory,
-      branch: row.branch || undefined,
-      isMain: row.is_main === 1,
-      agentCount: row.agent_count,
-      activeAgentCount: row.active_agent_count,
-      lastUsed: row.last_used || undefined,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      id: r.id,
+      projectId: r.project_id,
+      name: r.name,
+      directory: r.directory,
+      branch: r.branch || undefined,
+      isMain: r.is_main === 1,
+      agentCount: r.agent_count,
+      activeAgentCount: r.active_agent_count,
+      lastUsed: r.last_used || undefined,
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
     };
   }
 }

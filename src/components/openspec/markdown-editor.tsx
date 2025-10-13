@@ -65,52 +65,6 @@ export function MarkdownEditor({
     }
   }, [onSave, localContent]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Save: Ctrl+S / Cmd+S
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSave();
-        return;
-      }
-
-      // Validate: Ctrl+Shift+V
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'v') {
-        e.preventDefault();
-        onValidate?.();
-        return;
-      }
-
-      // Only apply formatting shortcuts if textarea is focused
-      if (document.activeElement !== textareaRef.current) return;
-
-      // Bold: Ctrl+B
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        applyFormatting('bold');
-        return;
-      }
-
-      // Italic: Ctrl+I
-      if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
-        e.preventDefault();
-        applyFormatting('italic');
-        return;
-      }
-
-      // Code: Ctrl+E
-      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        applyFormatting('code');
-        return;
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave, onValidate, localContent]);
-
   // Apply markdown formatting
   const applyFormatting = useCallback((type: 'bold' | 'italic' | 'code' | 'codeblock' | 'heading' | 'list') => {
     const textarea = textareaRef.current;
@@ -164,6 +118,52 @@ export function MarkdownEditor({
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
   }, [localContent, onChange]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Save: Ctrl+S / Cmd+S
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+        return;
+      }
+
+      // Validate: Ctrl+Shift+V
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'v') {
+        e.preventDefault();
+        onValidate?.();
+        return;
+      }
+
+      // Only apply formatting shortcuts if textarea is focused
+      if (document.activeElement !== textareaRef.current) return;
+
+      // Bold: Ctrl+B
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        applyFormatting('bold');
+        return;
+      }
+
+      // Italic: Ctrl+I
+      if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+        e.preventDefault();
+        applyFormatting('italic');
+        return;
+      }
+
+      // Code: Ctrl+E
+      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        applyFormatting('code');
+        return;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleSave, onValidate, applyFormatting]);
 
   return (
     <div className={`flex flex-col h-full ${className}`}>

@@ -13,8 +13,25 @@ export { getConfigsRepository } from './repositories/configs';
 export { getSettingsRepository } from './repositories/settings';
 export { getOpenSpecRepository } from './repositories/openspec';
 
-import { getDatabase, backupDatabase, vacuumDatabase, isPersistenceEnabled } from './client';
+import { getDatabase, backupDatabase, vacuumDatabase, isPersistenceEnabled, getDatabaseHealth } from './client';
 import { initializeSchema } from './schema';
+
+/**
+ * Check database health and return simplified status
+ */
+export function checkDatabaseHealth(): {
+  healthy: boolean;
+  schemaVersion: number | null;
+  issues?: string[];
+} {
+  const health = getDatabaseHealth();
+
+  return {
+    healthy: health.status === 'healthy',
+    schemaVersion: health.schemaVersion,
+    issues: health.error ? [health.error] : health.status !== 'healthy' ? ['Database not healthy'] : undefined,
+  };
+}
 
 /**
  * Initialize database system
