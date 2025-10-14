@@ -7,14 +7,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useApprovals } from '@/contexts/approvals-context';
-
-interface PendingApproval {
-  id: string;
-  toolName: string;
-  description: string;
-  params: Record<string, unknown>;
-  timestamp: number;
-}
+import type { PendingApproval } from '@/types/agent';
 
 interface PermissionApprovalDrawerProps {
   agentId: string;

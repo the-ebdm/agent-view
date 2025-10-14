@@ -5,14 +5,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-
-interface PendingApproval {
-  id: string;
-  toolName: string;
-  description: string;
-  params: Record<string, unknown>;
-  timestamp: number;
-}
+import type { PendingApproval } from '@/types/agent';
 
 interface AgentApprovals {
   agentId: string;
