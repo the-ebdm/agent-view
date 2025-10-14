@@ -168,6 +168,10 @@ export function SlashCommandButton({
           throw new Error(`Unknown command: ${command}`);
       }
 
+      console.log("agentName", agentName);
+      console.log("command", command);
+      console.log("prompt", prompt);
+
       // Spawn new agent
       const response = await fetch("/api/agents/spawn", {
         method: "POST",
@@ -177,7 +181,10 @@ export function SlashCommandButton({
           prompt,
           directory: projectDirectory || process.cwd(),
           toolPermissions: {
-            preset: command === "apply" ? "full-access" : "standard",
+            preset:
+              command === "apply" || command === "review"
+                ? "full-access"
+                : "standard",
           },
         }),
       });

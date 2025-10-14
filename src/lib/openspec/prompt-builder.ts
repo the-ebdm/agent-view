@@ -153,7 +153,7 @@ export function buildReviewChangePrompt(
   if (tasksCompleted && tasksTotal) {
     prompt += `\n**Progress:** ${tasksCompleted}/${tasksTotal} tasks completed (${Math.round((tasksCompleted / tasksTotal) * 100)}%)\n`;
     if (tasksCompleted > 0 && tasksCompleted < tasksTotal) {
-      prompt += `\n⚠️ **Note:** This change is partially implemented. Review completed tasks before continuing.\n`;
+      prompt += `\n⚠️ **Note:** This change is partially implemented.\n`;
     }
   }
 
