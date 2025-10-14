@@ -24,6 +24,7 @@
 - **Multi-Agent Orchestration**: Spawn and manage up to 20 concurrent agents with independent contexts
 - **Directory-Based Isolation**: Each agent operates in its assigned workspace with configurable tool permissions
 - **Real-Time Monitoring**: Stream agent progress, tool usage, and outputs via Server-Sent Events (SSE)
+- **Session Management**: Reply to agents, fork conversations, and pause/resume with full context preservation
 - **Remote Access**: Mobile-friendly UI for monitoring agents from smartphones and tablets
 - **Project Discovery**: Automatic project and git worktree detection for organizational context
 - **Permission Management**: Fine-grained control over which SDK tools each agent can access
@@ -294,6 +295,115 @@ sequenceDiagram
     ProjSvc-->>SessionMgr: { project, worktree? }
 ```
 
+### Session Management Flows
+
+#### Session Capture Flow
+
+```mermaid
+sequenceDiagram
+    participant SDK
+    participant StreamHandler
+    participant ExecMgr
+    participant SessionMgr
+    participant DB
+
+    SDK->>StreamHandler: Yield init message with session_id
+    StreamHandler->>StreamHandler: Extract session_id from message
+    StreamHandler->>ExecMgr: Return session metadata
+    ExecMgr->>SessionMgr: updateSessionId(agentId, sessionId)
+    SessionMgr->>SessionMgr: Update in-memory session
+    SessionMgr->>DB: Persist session_id to agents table
+
+    Note over SDK,DB: Session ID captured and persisted
+```
+
+#### Reply Flow (Conversation Continuation)
+
+```mermaid
+sequenceDiagram
+    participant UI
+    participant API
+    participant SessionMgr
+    participant ExecMgr
+    participant SDK
+
+    UI->>API: POST /api/agents/{id}/reply { message }
+    API->>SessionMgr: getSession(id)
+    SessionMgr-->>API: agent (with sessionId)
+    API->>API: Verify agent has sessionId
+    API->>SessionMgr: Update lifecycleState to 'running'
+    API->>ExecMgr: startAgent(id, { resumeFromSessionId })
+    ExecMgr->>SDK: query({ resume: sessionId, prompt: message })
+    SDK->>SDK: Continue conversation with full context
+    ExecMgr-->>API: Execution started
+    API-->>UI: { id, name, continued: true }
+
+    Note over UI,SDK: Same agent continues conversation
+```
+
+#### Fork Flow (Conversation Branching)
+
+```mermaid
+sequenceDiagram
+    participant UI
+    participant API
+    participant SessionMgr
+    participant ExecMgr
+    participant SDK
+
+    UI->>API: POST /api/agents/{id}/fork { prompt, name? }
+    API->>SessionMgr: getSession(id) - get parent
+    SessionMgr-->>API: parentAgent (with sessionId)
+    API->>API: Generate new agent ID
+    API->>SessionMgr: createSession(newId, prompt, directory, name)
+    SessionMgr-->>API: newSession
+    API->>ExecMgr: startAgent(newId, { forkFromSessionId })
+    ExecMgr->>SDK: query({ resume: parentSessionId, forkSession: true })
+    SDK->>SDK: Create forked session with new session_id
+    ExecMgr->>SessionMgr: updateSessionId(newId, newSessionId)
+    API-->>UI: { id: newId, forkedFrom: parentName }
+
+    Note over UI,SDK: New agent branches from parent context
+```
+
+#### Pause/Resume Flow (SDK Session-Based)
+
+```mermaid
+sequenceDiagram
+    participant UI
+    participant PauseAPI
+    participant ResumeAPI
+    participant SessionMgr
+    participant ExecMgr
+    participant SDK
+    participant DB
+
+    Note over UI,SDK: PAUSE
+    UI->>PauseAPI: POST /api/agents/{id}/pause
+    PauseAPI->>SessionMgr: getSession(id)
+    SessionMgr-->>PauseAPI: agent (with sessionId)
+    PauseAPI->>ExecMgr: stopAgent(id)
+    ExecMgr->>SDK: Stop generator gracefully
+    ExecMgr-->>PauseAPI: Stopped
+    PauseAPI->>SessionMgr: pauseAgent(id)
+    SessionMgr->>DB: Update lifecycleState='paused', preserve sessionId
+    PauseAPI-->>UI: { lifecycleState: 'paused' }
+
+    Note over UI,DB: Agent paused, session_id preserved
+
+    Note over UI,SDK: RESUME (minutes/hours later)
+    UI->>ResumeAPI: POST /api/agents/{id}/resume
+    ResumeAPI->>SessionMgr: getSession(id)
+    SessionMgr-->>ResumeAPI: agent (with sessionId)
+    ResumeAPI->>SessionMgr: resumeAgent(id)
+    ResumeAPI->>ExecMgr: startAgent(id, { resumeFromSessionId })
+    ExecMgr->>SDK: query({ resume: sessionId })
+    SDK->>SDK: Resume conversation from exact point
+    ResumeAPI-->>UI: { lifecycleState: 'running' }
+
+    Note over UI,SDK: Agent resumed with full context
+```
+
 ---
 
 ## Technology Stack
@@ -360,6 +470,8 @@ agent-view/
 │   │   │   │       ├── stop/route.ts           # POST stop agent
 │   │   │   │       ├── restart/route.ts        # POST restart agent
 │   │   │   │       ├── rename/route.ts         # PATCH rename agent
+│   │   │   │       ├── reply/route.ts          # POST reply to agent (session)
+│   │   │   │       ├── fork/route.ts           # POST fork agent (session)
 │   │   │   │       └── approvals/              # Tool permission approvals
 │   │   │   │           ├── route.ts            # GET pending approvals
 │   │   │   │           └── [approvalId]/route.ts # POST approve/deny
@@ -540,10 +652,21 @@ Response: Server-Sent Events (text/event-stream)
 #### Agent Lifecycle Control
 ```typescript
 POST /api/agents/[id]/pause
-Response: { success: boolean }
+Response: {
+  id: string;
+  lifecycleState: 'paused';
+  pausedTime: number;
+  sessionId?: string;
+}
 
 POST /api/agents/[id]/resume
-Response: { success: boolean }
+Request: { message?: string }  // Optional continuation message
+Response: {
+  id: string;
+  lifecycleState: 'running';
+  sessionId?: string;
+  resumed: boolean;
+}
 
 POST /api/agents/[id]/stop
 Response: { success: boolean }
@@ -555,6 +678,38 @@ Response: { id: string; name: string; status: AgentStatus }
 PATCH /api/agents/[id]/rename
 Request: { name: string }
 Response: { success: boolean; name: string }
+```
+
+#### Session Management (Conversational AI)
+```typescript
+POST /api/agents/[id]/reply
+Request: { message: string }
+Response: {
+  id: string;                  // Same agent ID (continuation)
+  name: string;                // Same agent name
+  status: 'running';
+  lifecycleState: 'running';
+  sessionId: string;
+  continued: true;             // Flag indicating conversation continuation
+}
+Error (400): "Agent does not have an SDK session ID"
+Error (409): "Agent is currently running. Please wait for completion."
+
+POST /api/agents/[id]/fork
+Request: {
+  prompt: string;              // New direction for forked conversation
+  name?: string;               // Optional custom name for fork
+}
+Response: {
+  id: string;                  // New agent ID (independent branch)
+  name: string;                // New agent name (e.g., "original-name - fork")
+  status: 'running';
+  lifecycleState: 'running';
+  toolPermissions: ToolPermission;
+  parentAgentId: string;       // Reference to parent agent
+  forkedFrom: string;          // Parent agent name
+}
+Error (400): "Agent does not have an SDK session ID"
 ```
 
 #### Tool Permission Approvals
@@ -674,9 +829,15 @@ Response: {
 
 ## Database Schema
 
-### Schema Version: 2
+### Schema Version: 4
 
 Agent View uses **SQLite** for optional persistence. If `ENABLE_DATABASE` environment variable is not set, the system operates entirely in-memory.
+
+**Migration History:**
+- **v1**: Initial schema (projects, worktrees, agents, messages, agent_configs, settings)
+- **v2**: Added project and worktree management fields
+- **v3**: Added agent naming and tool permissions
+- **v4**: Added `session_id` column to agents table for SDK session management
 
 ```mermaid
 erDiagram
@@ -726,6 +887,7 @@ erDiagram
         TEXT status
         TEXT lifecycle_state
         TEXT tool_permissions
+        TEXT session_id
         TEXT project_id FK
         TEXT worktree_id FK
         INTEGER start_time
@@ -784,6 +946,7 @@ erDiagram
 - Agent session records with lifecycle state
 - References project and worktree for organizational context
 - Stores tool permissions as JSON
+- **session_id**: Claude SDK session identifier for reply/fork/resume (nullable for legacy agents)
 
 **messages**
 - Agent output messages (assistant, tool_use, tool_result, error, result)
@@ -808,6 +971,7 @@ CREATE INDEX idx_agents_lifecycle ON agents(lifecycle_state);
 CREATE INDEX idx_agents_start_time ON agents(start_time DESC);
 CREATE INDEX idx_agents_project_id ON agents(project_id);
 CREATE INDEX idx_agents_worktree_id ON agents(worktree_id);
+CREATE INDEX idx_agents_session_id ON agents(session_id);
 
 -- messages
 CREATE INDEX idx_messages_agent_id ON messages(agent_id);
@@ -983,6 +1147,29 @@ session.worktreeId = discovery.worktree?.id;
 
 **Trade-off**: Very long-running agents lose early messages from buffer (acceptable).
 
+### 11. SDK Session Management for Conversational Workflows
+
+**Decision**: Capture and persist Claude SDK session IDs to enable reply, fork, and true pause/resume.
+
+**Rationale**:
+- **Reply**: Enables follow-up messages to agents without creating new instances (conversational continuity)
+- **Fork**: Allows branching conversations to explore alternatives while preserving original context
+- **Pause/Resume**: JavaScript generators can't be suspended, but SDK sessions enable context-preserving restart
+- **Backward compatible**: Nullable `session_id` column, legacy agents continue working
+- **Persistence**: Sessions can be resumed even after server restarts
+
+**Semantic Boundaries**:
+- **Reply**: Same agent, same ID, same name → continues conversation
+- **Fork**: New agent, new ID, new name → branches conversation
+- **Resume**: Same agent, same ID, same name → restarts paused work
+
+**Trade-offs**:
+- Session expiration: SDK may expire sessions after inactivity (mitigated with error handling)
+- Generator restart delay: 1-2s to restart generator on resume (acceptable for human-scale pauses)
+- Cannot pause mid-tool-execution: Must wait for tool completion (30s timeout before force-stop)
+
+**Implementation Note**: Current version blocks concurrent replies (409 Conflict). Message queuing is deferred as future enhancement.
+
 ---
 
 ## Deployment Architecture
@@ -1140,7 +1327,7 @@ sqlite3 agent-view.db ".backup agent-view-backup.db"
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-01-13
-**Schema Version**: 2
-**Application Version**: 0.1.0
+**Document Version**: 1.1
+**Last Updated**: 2025-01-14
+**Schema Version**: 4
+**Application Version**: 0.2.0
