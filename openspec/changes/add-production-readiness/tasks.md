@@ -1,8 +1,8 @@
 # Implementation Tasks
 
-**Last Updated:** 2025-10-13
+**Last Updated:** 2025-01-14
 **Change ID:** add-production-readiness
-**Status:** Partially Complete (Core infrastructure implemented, remaining tasks are API endpoints and local configuration)
+**Status:** Partially Complete (Core infrastructure implemented, remaining tasks are API endpoints and documentation)
 
 ## Status Overview
 
@@ -16,13 +16,11 @@
 **In Progress:**
 - 🔄 Health & Admin API endpoints (not yet implemented)
 - 🔄 Background job scheduler (not yet implemented)
-- 🔄 Testing infrastructure (not yet implemented)
+- 🔄 Documentation updates (plan created)
 
-**Pending:**
-- ⏳ Count reconciliation logic
-- ⏳ Project settings application
-- ⏳ Local deployment configuration
-- ⏳ Documentation updates
+**Deferred to Future Changes:**
+- ⏸️ Testing infrastructure (moved to separate change)
+- ⏸️ Project settings application (moved to separate change)
 
 ## 1. Code Quality - Fix Linting Errors (CRITICAL - Blocking Build)
 
@@ -137,187 +135,88 @@
   - Return `source: 'memory' | 'database'` in response (not yet implemented)
   - Maintain backward compatibility
 
-## 6. Project Settings Application
+## 6. Documentation Updates
 
-- [ ] 6.1 Apply default tool permissions on agent spawn
-  - Modify `src/app/api/agents/spawn/route.ts`
-  - Check if request has explicit `toolPermissions`
-  - If not, query project's `default_tool_permissions`
-  - Use project default or fall back to global default
-  - Pass resolved permissions to `createSession()`
-- [ ] 6.2 Apply custom OpenSpec path in CLI commands
-  - Modify `src/lib/openspec/cli-wrapper.ts`
-  - Accept optional `projectId` parameter in CLI wrapper functions
-  - Query project's `openspec_path` from database
-  - Add `--path` flag to OpenSpec CLI commands if custom path exists
-  - Resolve relative paths from project directory
-- [ ] 6.3 Update project API to support settings
-  - Support updating `default_tool_permissions` via PATCH /api/projects/[id]
-  - Support updating `openspec_path` via PATCH /api/projects/[id]
-  - Validate tool permissions schema
-  - Validate OpenSpec path exists
+**See:** `documentation-plan.md` for complete details
 
-## 7. Testing Infrastructure Setup
+- [ ] 6.1 Update README.md
+  - Add "Database & Persistence" section (~50 lines)
+    - Database location and features persisted
+    - Session recovery details
+    - Backup & restore procedures
+    - Database reset instructions
+  - Add "Environment Variables" section (~30 lines)
+    - Required: ANTHROPIC_API_KEY
+    - Optional: Database (ENABLE_PERSISTENCE, DATABASE_PATH, etc.)
+    - Optional: Server (PORT, NODE_ENV)
+  - Add "Troubleshooting" section (~70 lines)
+    - Database issues (locked, corrupted, recovery)
+    - Performance issues (memory, message buffers)
+    - Agent issues (stuck, limits)
+    - API connection issues
+    - Background jobs issues
 
-- [ ] 7.1 Install and configure testing framework
-  - Run `bun add -d vitest @vitest/ui`
-  - Create `vitest.config.ts` with Next.js compatibility
-  - Add test scripts to package.json: `test`, `test:ui`, `test:coverage`
-  - Configure path aliases (`@/*`) in test environment
-- [ ] 7.2 Create test directory structure
-  - Create `src/__tests__/` directory
-  - Create subdirectories: `database/`, `lib/`, `api/`, `components/`
-  - Add `.test.ts` or `.spec.ts` convention
+- [ ] 6.2 Update docs/ARCHITECTURE.md
+  - Add "Background Jobs & Automated Maintenance" section (~150 lines)
+    - Job scheduler architecture diagram
+    - Scheduled jobs details (4 jobs)
+    - Job execution safety
+    - Manual job triggers
+    - Disabling background jobs
+  - Add "Health Monitoring & Observability" section (~50 lines)
+    - Health check endpoint documentation
+    - Status definitions
+    - Logging strategy
+    - Observability best practices
 
-## 8. Database Tests
+- [ ] 6.3 Create docs/API.md (NEW ~800-1000 lines)
+  - Comprehensive API reference for all endpoints
+  - 9 major sections (Agent Management, Lifecycle, Session, Permissions, Projects, Worktrees, Configs, OpenSpec, Health/Admin)
+  - For each endpoint: HTTP method, description, request/response types, curl examples, error responses
+  - Reference existing API contracts in ARCHITECTURE.md
 
-- [ ] 8.1 Test schema initialization (`src/__tests__/database/schema.test.ts`)
-  - Test fresh database creation (version 3)
-  - Test schema version detection
-  - Test all tables created with correct columns
-  - Test all indexes created
-  - Test default settings seeded
-- [ ] 8.2 Test migrations (`src/__tests__/database/migrations.test.ts`)
-  - Test v1 → v2 migration (projects/worktrees)
-  - Test v2 → v3 migration (openspec tables)
-  - Test migration rollback safety
-  - Test migration idempotency
-- [ ] 8.3 Test AgentsRepository (`src/__tests__/database/agents.test.ts`)
-  - Test create, findById, findAll, update, delete operations
-  - Test foreign key constraints (project_id, worktree_id)
-  - Test cascade delete behavior
-  - Test concurrent access
-- [ ] 8.4 Test ProjectsRepository (`src/__tests__/database/projects.test.ts`)
-  - Test CRUD operations
-  - Test count reconciliation logic
-  - Test favorite/archive functionality
-  - Test unique directory constraint
-- [ ] 8.5 Test OpenSpecRepository (`src/__tests__/database/openspec.test.ts`)
-  - Test spec, change, archive upsert operations
-  - Test sync status tracking
-  - Test validation status persistence
-
-## 9. Business Logic Tests
-
-- [ ] 9.1 Test AgentSessionManager (`src/__tests__/lib/agent-session.test.ts`)
-  - Test createSession with database persistence
-  - Test session recovery from database
-  - Test updateStatus persistence
-  - Test lifecycle methods (pause, resume, stop)
-- [ ] 9.2 Test ProjectDiscoveryService (`src/__tests__/lib/project-discovery.test.ts`)
-  - Test auto-discovery from directory
-  - Test git worktree detection
-  - Test package.json name extraction
-  - Test project/worktree linking
-- [ ] 9.3 Test OpenSpec sync (`src/__tests__/lib/openspec-sync.test.ts`)
-  - Test full sync from filesystem
-  - Test git timestamp extraction
-  - Test entity removal detection
-  - Test concurrent sync prevention
-  - Test staleness detection
-
-## 10. API Tests
-
-- [ ] 10.1 Test health endpoints (`src/__tests__/api/health.test.ts`)
-  - Test /api/health/database with healthy database
-  - Test /api/health/database with degraded database
-  - Test /api/health/database with disabled persistence
-- [ ] 10.2 Test admin endpoints (`src/__tests__/api/admin.test.ts`)
-  - Test /api/admin/reconcile with all projects
-  - Test /api/admin/reconcile with specific projectId
-  - Test error handling
-- [ ] 10.3 Test agent spawn with project settings (`src/__tests__/api/agents.test.ts`)
-  - Test spawn applies project default tool permissions
-  - Test spawn with explicit permissions overrides defaults
-  - Test spawn without project (no defaults)
-
-## 11. Documentation Updates
-
-- [ ] 11.1 Update README.md
-  - Add "Database" section explaining SQLite persistence
-  - Document database location: `~/.config/agent-view/database.sqlite`
-  - Document environment variables:
-    - `DATABASE_PATH` - Custom database location
-    - `ENABLE_PERSISTENCE` - Enable/disable database (default: true)
-    - `ENABLE_SESSION_RECOVERY` - Enable session recovery (default: true)
-    - `ENABLE_BACKGROUND_JOBS` - Enable automated jobs (default: true)
-    - `MESSAGE_RETENTION_DAYS` - Message retention policy (default: 30)
-  - Add backup/restore procedures
-  - Add troubleshooting section (database corruption, reset procedures)
-- [ ] 11.2 Create/update docs/ARCHITECTURE.md
-  - Add database schema diagrams (ASCII art or Mermaid)
-  - Document all schema versions
-  - Explain migration process
-  - Document repository pattern implementation
-  - Add data flow diagrams:
-    - Agent spawn → project discovery → database persistence
-    - Message broadcasting → database persistence → stream replay
-    - OpenSpec sync → git timestamps → database cache
-- [ ] 11.3 Create docs/API.md
-  - Document all API endpoints with examples
-  - Group by feature: Agents, Projects, Worktrees, OpenSpec, Health, Admin
-  - Include request/response schemas
-  - Document error responses
-  - Add curl examples for local testing
-- [ ] 11.4 Create docs/OPERATIONS.md
-  - Document backup procedures (manual and automated)
-  - Document restore procedures
-  - Document database migration procedures
-  - Document count reconciliation when needed
-  - Document health monitoring and troubleshooting for local development
-
-## 12. Local Deployment & Configuration
-
-- [ ] 12.1 Create configuration templates
-  - Example `.env.local` file with all available environment variables
-  - Configuration validation on startup
-  - Graceful handling of missing configuration
-- [ ] 12.2 Add application health checks
-  - Simple health check endpoint for local monitoring
-  - Database connectivity verification
-  - File system permissions check for critical directories
-- [ ] 12.3 Configure database persistence for local use
-  - Ensure proper permissions for `~/.config/agent-view/` directory
-  - Handle database file location changes gracefully
-  - Support portable database location via `DATABASE_PATH`
-- [ ] 12.4 Document local setup and configuration
+- [ ] 6.4 Create docs/OPERATIONS.md (NEW ~500-700 lines)
+  - Daily operations (starting app, monitoring, managing agents)
+  - Database management (backup, restore, maintenance, reconciliation)
+  - Troubleshooting procedures (corruption, memory, disk space)
+  - Upgrade procedures (application updates, schema migrations)
+  - Security hardening (network, filesystem, API key)
+  - Monitoring & alerts setup
+  - Performance tuning
   - Update README.md with local installation instructions
   - Document available environment variables
   - Add troubleshooting guide for common local issues
 
-## 13. Final Validation & Testing
+## 7. Final Validation
 
-- [ ] 13.1 Run full test suite
-  - Execute `npm run test`
-  - Ensure all tests pass
-  - Check test coverage (aim for >70% on critical paths)
-- [ ] 13.2 Test production build
+- [ ] 7.1 Test production build
   - Run `npm run build`
   - Verify no TypeScript errors
-  - Verify no linting errors
-- [ ] 13.3 Test session recovery end-to-end
+  - Verify no linting errors (only minor warnings acceptable)
+- [ ] 7.2 Test session recovery end-to-end
   - Spawn multiple agents
   - Restart server
   - Verify agents recovered correctly
   - Verify message history preserved
-- [ ] 13.4 Test background jobs
-  - Trigger message retention cleanup
+- [ ] 7.3 Test background jobs manually
+  - Trigger message retention cleanup (via admin endpoint or wait for schedule)
   - Trigger database vacuum
   - Trigger backup creation
   - Trigger count reconciliation
   - Verify job execution logs
-- [ ] 13.5 Test health endpoints
-  - Test database health check
+- [ ] 7.4 Test health endpoints
+  - Test database health check with healthy database
   - Test reconciliation endpoint
-  - Simulate database failures
-  - Verify graceful degradation
-- [ ] 13.6 Perform load testing (optional)
-  - Spawn 20 concurrent agents
-  - Verify database performance acceptable
-  - Verify no memory leaks
-  - Monitor resource usage
+  - Verify graceful degradation if database unavailable
+- [ ] 7.5 End-to-end smoke test
+  - Spawn agent with various tool permissions
+  - Pause and resume agent
+  - Reply to agent (session continuation)
+  - Fork agent (session branching)
+  - Stop agent
+  - Verify all features work as expected
 
-## 14. Archive Previous Changes
+## 8. Archive Previous Changes (Already Complete)
 
 - [x] 14.1 Archive `add-sqlite-persistence`
   - Run `openspec archive add-sqlite-persistence`
