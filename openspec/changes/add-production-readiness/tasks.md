@@ -7,6 +7,7 @@
 ## Status Overview
 
 **Completed:**
+
 - ✅ Code Quality - All linting errors fixed (build passes)
 - ✅ Session Recovery - Full implementation with database hydration
 - ✅ Database Health Checks - Basic health monitoring in instrumentation
@@ -14,11 +15,13 @@
 - ✅ Previous Changes Archived - All prior OpenSpec changes moved to archive
 
 **In Progress:**
+
 - 🔄 Health & Admin API endpoints (not yet implemented)
 - 🔄 Background job scheduler (not yet implemented)
 - 🔄 Documentation updates (plan created)
 
 **Deferred to Future Changes:**
+
 - ⏸️ Testing infrastructure (moved to separate change)
 - ⏸️ Project settings application (moved to separate change)
 
@@ -99,7 +102,7 @@
 ## 4. Count Reconciliation Logic
 
 - [ ] 4.1 Implement `ProjectsRepository.reconcileCounts(projectId?: string)`
-  - Query actual agent_count from agents table (COUNT(*))
+  - Query actual agent_count from agents table (COUNT(\*))
   - Query actual active_agent_count (WHERE lifecycle_state IN ('running', 'paused'))
   - Query actual worktree_count from worktrees table
   - Update projects table with correct counts
@@ -140,6 +143,7 @@
 **See:** `documentation-plan.md` for complete details
 
 - [ ] 6.1 Update README.md
+
   - Add "Database & Persistence" section (~50 lines)
     - Database location and features persisted
     - Session recovery details
@@ -157,6 +161,7 @@
     - Background jobs issues
 
 - [ ] 6.2 Update docs/ARCHITECTURE.md
+
   - Add "Background Jobs & Automated Maintenance" section (~150 lines)
     - Job scheduler architecture diagram
     - Scheduled jobs details (4 jobs)
@@ -170,6 +175,7 @@
     - Observability best practices
 
 - [ ] 6.3 Create docs/API.md (NEW ~800-1000 lines)
+
   - Comprehensive API reference for all endpoints
   - 9 major sections (Agent Management, Lifecycle, Session, Permissions, Projects, Worktrees, Configs, OpenSpec, Health/Admin)
   - For each endpoint: HTTP method, description, request/response types, curl examples, error responses
