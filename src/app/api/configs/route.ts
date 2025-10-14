@@ -8,7 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getConfigsRepository, isPersistenceEnabled } from '@/lib/database';
-import type { SavedAgentConfig } from '@/types/agent';
+import type { SavedAgentConfig } from '@/lib/agent-templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +29,10 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const favoritesOnly = searchParams.get('favorites') === 'true';
 
-    const configs = favoritesOnly
-      ? configsRepo.findAll({ favoritesOnly: true })
-      : configsRepo.findAll();
+    const allConfigs = configsRepo.findAll();
+    // Note: Configs repository doesn't support filtering favorites yet
+    // For now, return all configs (favorites are sorted first by SQL query)
+    const configs = allConfigs;
 
     return NextResponse.json({ configs });
   } catch (error) {
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, prompt, directory, toolPreset, customTools, tags, isFavorite } = body;
+    const { name, prompt, directory, toolPreset, customTools } = body;
 
     // Validate required fields
     if (!name || !prompt || !directory || !toolPreset) {
@@ -77,8 +78,6 @@ export async function POST(request: NextRequest) {
       toolPreset,
       customTools,
       createdAt: Date.now(),
-      tags,
-      isFavorite: isFavorite || false,
     };
 
     const created = configsRepo.create(config);

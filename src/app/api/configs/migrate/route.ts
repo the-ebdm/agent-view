@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getConfigsRepository, isPersistenceEnabled } from '@/lib/database';
-import type { SavedAgentConfig } from '@/types/agent';
+import type { SavedAgentConfig } from '@/lib/agent-templates';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,8 +62,6 @@ export async function POST(request: NextRequest) {
           customTools: config.customTools,
           createdAt: config.createdAt || Date.now(),
           lastUsed: config.lastUsed,
-          tags: config.tags,
-          isFavorite: config.isFavorite || false,
         };
 
         configsRepo.create(configToImport);

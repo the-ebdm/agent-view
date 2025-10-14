@@ -89,10 +89,10 @@ function setCachedResult(id: string, contentHash: string, result: unknown): void
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ID format (alphanumeric, hyphens, underscores only)
     if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
@@ -124,7 +124,7 @@ export async function POST(
       const cached = getCachedResult(id, contentHash);
       if (cached) {
         return NextResponse.json({
-          ...cached,
+          ...(cached as object),
           cached: true,
         });
       }
@@ -207,10 +207,10 @@ function extractLineFromError(message: string): number | undefined {
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ID format
     if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
@@ -226,7 +226,7 @@ export async function GET(
       const age = Date.now() - cached.timestamp;
       if (age <= CACHE_TTL_MS) {
         return NextResponse.json({
-          ...cached.result,
+          ...(cached.result as object),
           cached: true,
           cacheAge: age,
         });

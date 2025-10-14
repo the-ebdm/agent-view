@@ -15,10 +15,10 @@ const restartSchema = z.object({
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Get the existing session to retrieve its configuration
     const oldSession = sessionManager.getSession(id);
@@ -62,7 +62,7 @@ export async function POST(
     });
 
     // Create new session with same name pattern
-    const newSession = sessionManager.createSession(
+    const newSession = await sessionManager.createSession(
       result.id,
       oldSession.prompt,
       oldSession.directory,

@@ -5,10 +5,10 @@ import { executionManager } from '@/lib/agent-execution-manager';
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Stop execution via execution manager (gracefully closes generator)
     await executionManager.stopAgent(id);
