@@ -71,6 +71,112 @@ bun dev
 
 Access the UI at [http://localhost:3000](http://localhost:3000)
 
+### Environment Variables
+
+Agent View supports the following environment variables for configuration:
+
+```bash
+# Required
+ANTHROPIC_API_KEY=sk-ant-...           # Your Anthropic API key
+
+# Database & Persistence (optional)
+ENABLE_PERSISTENCE=true                 # Enable/disable SQLite database (default: true)
+DATABASE_PATH=~/.config/agent-view/database.sqlite  # Custom database location
+ENABLE_SESSION_RECOVERY=true            # Restore agents on restart (default: true)
+ENABLE_BACKGROUND_JOBS=true             # Enable automated maintenance (default: true)
+
+# Background Jobs (optional)
+MESSAGE_RETENTION_DAYS=30               # Days to keep messages (default: 30)
+BACKUP_PATH=~/.config/agent-view/backups  # Backup directory location
+MAX_BACKUPS=7                           # Number of backups to keep (default: 7)
+
+# Server (optional)
+PORT=3000                               # Server port (default: 3000)
+NODE_ENV=development                    # Environment mode
+```
+
+Create a `.env.local` file in the root directory with your configuration. At minimum, you need `ANTHROPIC_API_KEY`.
+
+## Database & Persistence
+
+Agent View uses SQLite for persistent storage of agents, projects, messages, and OpenSpec data.
+
+### Features
+
+- **Agent Sessions** - All agents automatically persist to database with their configuration and state
+- **Message History** - Complete conversation history with automatic retention policies
+- **Projects & Worktrees** - Automatic discovery and tracking of your project directories
+- **OpenSpec Cache** - Persisted specs, changes, and validation results for faster access
+- **Session Recovery** - Agents are automatically restored after server restarts
+
+### Database Location
+
+By default, the database is stored at:
+```
+~/.config/agent-view/database.sqlite
+```
+
+You can customize this location with the `DATABASE_PATH` environment variable.
+
+### Backup & Restore
+
+**Automatic Backups**
+- Daily backups run automatically at 1 AM (local timezone)
+- Last 7 backups are kept by default (configurable via `MAX_BACKUPS`)
+- Backups stored in `~/.config/agent-view/backups/`
+
+**Manual Backup**
+```bash
+# Copy database file
+cp ~/.config/agent-view/database.sqlite ~/.config/agent-view/database.backup
+```
+
+**Restore from Backup**
+```bash
+# 1. Stop the application
+# 2. Replace database file
+cp ~/.config/agent-view/backups/database-2025-01-14.sqlite ~/.config/agent-view/database.sqlite
+# 3. Restart the application
+```
+
+### Database Maintenance
+
+**Automated Tasks** (runs daily/weekly):
+- Message retention cleanup (daily at 2 AM) - removes messages older than 30 days
+- Database vacuum (weekly on Sunday at 3 AM) - reclaims deleted space
+- Automated backups (daily at 1 AM)
+- Count reconciliation (daily at 4 AM) - fixes any drifted agent/worktree counts
+
+**Manual Reconciliation** (via API):
+```bash
+# Fix project/worktree counts if they drift out of sync
+curl -X POST http://localhost:3000/api/admin/reconcile
+```
+
+**Health Check** (via API):
+```bash
+# Check database connectivity and statistics
+curl http://localhost:3000/api/health/database
+```
+
+### Disabling Persistence
+
+To run without database persistence (in-memory only):
+```bash
+ENABLE_PERSISTENCE=false npm run dev
+```
+
+Note: With persistence disabled, all data is lost on server restart.
+
+### Database Reset
+
+**⚠️ DANGER: Deletes all data**
+```bash
+# Stop the application first
+rm ~/.config/agent-view/database.sqlite
+# Restart to create a fresh database
+```
+
 ## Architecture
 
 Agent View is built on the Claude Agent SDK, which provides:
@@ -178,6 +284,93 @@ See `openspec/project.md` for detailed conventions and `openspec/AGENTS.md` for 
 - [ ] Task queuing and scheduling
 - [ ] Session persistence across restarts
 - [ ] Linear/GitHub integrations
+
+## Troubleshooting
+
+### Database Issues
+
+**Database Locked**
+```bash
+# Check if another process is using the database
+lsof ~/.config/agent-view/database.sqlite
+
+# If you see multiple processes, stop the application and restart
+```
+
+**Database Corrupted**
+```bash
+# 1. Stop the application
+# 2. Restore from backup (see Database Reset section above)
+# 3. If no backup exists, reset database (WARNING: deletes all data)
+rm ~/.config/agent-view/database.sqlite
+```
+
+**Session Recovery Issues**
+```bash
+# If agents aren't restoring properly:
+# 1. Check database health endpoint
+curl http://localhost:3000/api/health/database
+
+# 2. Disable session recovery temporarily
+ENABLE_SESSION_RECOVERY=false npm run dev
+
+# 3. Check server logs for errors during startup
+```
+
+### Performance Issues
+
+**High Memory Usage**
+- Each agent keeps ~1000 messages in memory
+- With 20 agents running, expect ~150MB memory usage
+- Reduce `MESSAGE_RETENTION_DAYS` to free up disk space
+- Stop unused agents to free memory
+
+**Database Growing Too Large**
+```bash
+# Check database size
+ls -lh ~/.config/agent-view/database.sqlite
+
+# Reduce retention period (requires restart)
+MESSAGE_RETENTION_DAYS=7 npm run dev
+
+# Manual vacuum (while app is running)
+curl -X POST http://localhost:3000/api/admin/reconcile
+```
+
+### Agent Issues
+
+**Agent Stuck or Not Responding**
+- Check agent status in UI (running/paused/stopped)
+- Use Stop button to gracefully terminate
+- Check server logs for errors
+
+**Agent Limit Reached (20 agents)**
+- Stop or complete some agents before spawning new ones
+- This is a hard limit to prevent resource exhaustion
+
+**Agents Lost After Restart**
+- Verify `ENABLE_SESSION_RECOVERY=true` in environment
+- Check database health endpoint for connectivity
+- Review server startup logs for errors
+
+### API Connection Issues
+
+**Cannot Connect to Anthropic API**
+- Verify `ANTHROPIC_API_KEY` is set correctly
+- Check your API key has appropriate usage limits
+- Ensure you're on Claude Code Pro or Max plan
+
+### Background Jobs Issues
+
+**Backups Not Running**
+- Check `ENABLE_BACKGROUND_JOBS=true` is set
+- Review server logs at 1 AM for backup execution
+- Verify backup directory permissions
+
+**Messages Not Being Cleaned Up**
+- Check `MESSAGE_RETENTION_DAYS` setting
+- Background jobs run at 2 AM daily
+- Manual trigger: restart server to force reconciliation
 
 ## Security Considerations
 
