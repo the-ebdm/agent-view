@@ -35,7 +35,6 @@ The primary goal is to enable mobile-first, multi-agent development workflows wh
 ### Infrastructure
 
 - **Tailscale** - Secure network access for remote UI access
-- **Kubernetes (microk8s)** - Deployment target (personal cluster: heimdall/odin)
 
 ## Project Conventions
 
@@ -221,13 +220,6 @@ src/
 - **Tailscale** - Secure network mesh for remote access
   - Required for mobile access to local dev server
   - Alternative: VPN or SSH tunneling (not recommended)
-
-### Deployment Target
-
-- **Kubernetes (microk8s)** - Personal cluster deployment
-  - Cluster: heimdall/odin nodes
-  - Namespace: TBD
-  - Ingress: Tailscale Operator or similar
 
 ### Optional Integrations (Future)
 

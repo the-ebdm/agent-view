@@ -1,6 +1,6 @@
 # Code Quality
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Code must pass TypeScript strict type checking
 

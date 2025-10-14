@@ -2,7 +2,7 @@
 
 ## Overview
 
-This change consolidates all remaining production-readiness work from three completed database features into a cohesive implementation that makes Agent View deployment-ready for Kubernetes.
+This change consolidates all remaining production-readiness work from three completed database features into a cohesive implementation that makes Agent View ready for reliable daily use.
 
 ## Architecture Decisions
 
@@ -11,7 +11,7 @@ This change consolidates all remaining production-readiness work from three comp
 **Choice: Cron-based in-process scheduler**
 
 Alternatives considered:
-- External job runner (Kubernetes CronJobs) - Rejected: Adds deployment complexity, requires database access from multiple pods
+- External job runner (separate process) - Rejected: Adds complexity, requires IPC or database coordination
 - Bull/BullMQ (Redis-based) - Rejected: Overkill for simple scheduled tasks, adds Redis dependency
 - node-cron (in-process) - **Selected**: Simple, reliable, no external dependencies
 
@@ -44,8 +44,8 @@ Jobs run in the same process as the Next.js server:
 Trade-offs:
 - ✅ Simple, no external dependencies
 - ✅ Fast execution (in-memory access)
-- ❌ Only one pod can run jobs (SQLite limitation)
-- ❌ Jobs stop if pod crashes (acceptable for daily tasks)
+- ✅ Runs alongside the application
+- ❌ Jobs stop if application restarts (acceptable for daily maintenance tasks)
 
 ### 2. Session Recovery Strategy
 
@@ -157,30 +157,16 @@ GET /api/health/database
 }
 ```
 
-Kubernetes integration:
-```yaml
-livenessProbe:
-  httpGet:
-    path: /api/health/database
-    port: 3000
-  initialDelaySeconds: 30
-  periodSeconds: 30
-  failureThreshold: 3
-
-readinessProbe:
-  httpGet:
-    path: /api/health/database
-    port: 3000
-  initialDelaySeconds: 10
-  periodSeconds: 10
-  failureThreshold: 1
-```
+Health check integration:
+- User can verify database health via HTTP endpoint
+- UI can poll health status to show warnings
+- Useful for troubleshooting local setup issues
 
 Trade-offs:
-- ✅ Kubernetes-native (HTTP probes)
+- ✅ Simple HTTP endpoint for easy checking
 - ✅ Detailed status information
 - ✅ Supports gradual degradation (healthy → degraded → error)
-- ❌ HTTP overhead (but acceptable for 10-30s intervals)
+- ❌ Minimal overhead for local development
 
 ### 5. Testing Strategy
 
@@ -287,34 +273,34 @@ Persist to Database
 
 ### From Current State to Production-Ready
 
-1. **Phase 1: Build Fixes (Day 1)**
+1. **Phase 1: Build Fixes (Day 1)** ✅ Complete
    - Fix linting errors (blocking)
    - Verify build passes
-   - Deploy to dev environment
+   - Test in dev environment
 
-2. **Phase 2: Core Production Features (Days 2-3)**
-   - Implement session recovery
-   - Implement background jobs
-   - Add health endpoints
-   - Test on dev environment
+2. **Phase 2: Core Production Features (Days 2-3)** ✅ Mostly Complete
+   - Implement session recovery ✅
+   - Implement background jobs ⏳
+   - Add health endpoints ⏳
+   - Test locally
 
-3. **Phase 3: Testing & Validation (Days 4-5)**
+3. **Phase 3: Testing & Validation (Days 4-5)** ⏳ Pending
    - Set up Vitest
    - Write critical path tests
    - Run test suite and fix failures
    - Verify test coverage meets goals
 
-4. **Phase 4: Documentation & Deployment Prep (Day 6)**
-   - Update README, ARCHITECTURE.md, API.md, OPERATIONS.md
-   - Create Kubernetes manifests
-   - Test deployment to microk8s cluster
-   - Validate health checks
+4. **Phase 4: Documentation (Day 6)** ⏳ Pending
+   - Update README with database info and operations
+   - Add architecture documentation
+   - Document API endpoints
+   - Create troubleshooting guide
 
-5. **Phase 5: Production Deployment (Day 7)**
+5. **Phase 5: Verification (Day 7)** ⏳ Pending
    - Archive previous changes
-   - Deploy to production namespace
-   - Monitor logs and health checks
-   - Verify session recovery after pod restart
+   - Full end-to-end testing
+   - Verify session recovery after restart
+   - Confirm all features work in local environment
 
 ## Risk Mitigation
 
@@ -382,13 +368,7 @@ Expected disk:
 - Backups: 350MB-3.5GB (7 backups)
 - Total: <5GB for typical usage
 
-## Deployment Considerations
-
-### Kubernetes Constraints
-
-- **Single replica only** - SQLite does not support concurrent writes from multiple pods
-- **Persistent volume required** - Database must survive pod restarts
-- **Backup strategy** - Copy database file to separate storage (S3, NFS)
+## Local Development Considerations
 
 ### Scalability Limits
 
@@ -398,37 +378,33 @@ Current architecture supports:
 - **Unlimited projects/worktrees** (database has no limits)
 - **30 days message retention** (configurable)
 
-Future scalability (requires migration to PostgreSQL):
-- Multiple replicas (horizontal scaling)
-- Concurrent writes from multiple pods
-- Distributed job execution
+This is appropriate for local development workloads. Future scalability would require architectural changes (PostgreSQL, distributed system).
 
 ### Operational Procedures
 
 **Backup:**
 ```bash
-# Automatic (daily at 1 AM)
-cp database.sqlite database.sqlite.backup-$(date +%Y%m%d)
+# Automatic (daily at 1 AM via background job)
+cp ~/.config/agent-view/database.sqlite ~/.config/agent-view/backups/database.sqlite.backup-$(date +%Y%m%d)
 
 # Manual
-kubectl exec -n agent-view agent-view-pod -- cp /data/database.sqlite /data/backup.sqlite
+cp ~/.config/agent-view/database.sqlite ~/.config/agent-view/database.sqlite.backup
 ```
 
 **Restore:**
 ```bash
-# Stop pod, restore database, restart pod
-kubectl scale deployment agent-view --replicas=0
-kubectl cp backup.sqlite agent-view-pod:/data/database.sqlite
-kubectl scale deployment agent-view --replicas=1
+# Stop the application, restore database, restart
+cp ~/.config/agent-view/database.sqlite.backup ~/.config/agent-view/database.sqlite
+# Then restart the application
 ```
 
 **Reconcile Counts:**
 ```bash
-# Via API
-curl -X POST http://agent-view.local/api/admin/reconcile
+# Via API (with dev server running)
+curl -X POST http://localhost:3000/api/admin/reconcile
 
 # For specific project
-curl -X POST http://agent-view.local/api/admin/reconcile \
+curl -X POST http://localhost:3000/api/admin/reconcile \
   -H "Content-Type: application/json" \
   -d '{"projectId": "project-id-here"}'
 ```
@@ -436,6 +412,6 @@ curl -X POST http://agent-view.local/api/admin/reconcile \
 **Reset Database:**
 ```bash
 # DANGER: Deletes all data
-kubectl exec -n agent-view agent-view-pod -- rm /data/database.sqlite
-kubectl delete pod -l app=agent-view # Restart pod to recreate
+rm ~/.config/agent-view/database.sqlite
+# Restart application to recreate fresh database
 ```

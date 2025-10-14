@@ -246,7 +246,7 @@
   - Add troubleshooting section (database corruption, reset procedures)
 - [ ] 11.2 Create/update docs/ARCHITECTURE.md
   - Add database schema diagrams (ASCII art or Mermaid)
-  - Document all three schema versions (v1, v2, v3)
+  - Document all schema versions
   - Explain migration process
   - Document repository pattern implementation
   - Add data flow diagrams:
@@ -258,14 +258,13 @@
   - Group by feature: Agents, Projects, Worktrees, OpenSpec, Health, Admin
   - Include request/response schemas
   - Document error responses
-  - Add curl examples for testing
+  - Add curl examples for local testing
 - [ ] 11.4 Create docs/OPERATIONS.md
   - Document backup procedures (manual and automated)
   - Document restore procedures
   - Document database migration procedures
   - Document count reconciliation when needed
-  - Document health monitoring for local development
-  - Document troubleshooting procedures for local setup
+  - Document health monitoring and troubleshooting for local development
 
 ## 12. Local Deployment & Configuration
 
