@@ -121,7 +121,7 @@ export default function Home() {
             {/* Help Button */}
             <Button
               onClick={() => setShowHelp(true)}
-              variant="outline"
+              variant="ghost"
               size="sm"
               title="Help & Shortcuts (⌘H)"
             >
@@ -169,7 +169,7 @@ export default function Home() {
                     setDirectoryPath('');
                     setAddProjectError('');
                   }}
-                  variant="outline"
+                  variant="ghost"
                   disabled={isAddingProject}
                 >
                   Cancel
