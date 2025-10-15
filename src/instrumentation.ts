@@ -36,6 +36,20 @@ export async function register() {
       } else {
         console.log('[Instrumentation] Session recovery disabled (ENABLE_SESSION_RECOVERY=false)');
       }
+
+      // Initialize background job scheduler
+      const enableBackgroundJobs = process.env.ENABLE_BACKGROUND_JOBS !== 'false'; // Default: true
+      if (enableBackgroundJobs) {
+        const { getJobScheduler } = await import('./lib/database/jobs');
+        const scheduler = getJobScheduler();
+        scheduler.start();
+        console.log('[Instrumentation] Background job scheduler started');
+        const jobs = scheduler.getJobs();
+        console.log(`[Instrumentation] Registered ${jobs.length} background jobs:`,
+          jobs.map(j => `${j.name} (${j.schedule})`).join(', '));
+      } else {
+        console.log('[Instrumentation] Background jobs disabled (ENABLE_BACKGROUND_JOBS=false)');
+      }
     } catch (error) {
       console.error('[Instrumentation] Failed to initialize database:', error);
       // Don't throw - allow server to start even if database fails

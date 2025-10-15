@@ -319,6 +319,66 @@ export class WorktreesRepository {
   }
 
   /**
+   * Reconcile counts for all worktrees or a specific worktree
+   * Recalculates agent_count and active_agent_count from actual data
+   * Returns number of worktrees corrected
+   */
+  reconcileCounts(worktreeId?: string): number {
+    if (!this.db) {
+      console.warn('[WorktreesRepository] Database not available, skipping reconcileCounts');
+      return 0;
+    }
+
+    try {
+      // Reconcile for a specific worktree or all worktrees
+      const worktrees = worktreeId ? [this.findById(worktreeId)] : this.findAll();
+      let corrected = 0;
+
+      for (const worktree of worktrees) {
+        if (!worktree) continue;
+
+        // Get actual counts from database
+        const agentCountRow = this.db.prepare(`
+          SELECT COUNT(*) as count FROM agents WHERE worktree_id = ?
+        `).get(worktree.id) as { count: number };
+
+        const activeAgentCountRow = this.db.prepare(`
+          SELECT COUNT(*) as count FROM agents
+          WHERE worktree_id = ? AND lifecycle_state IN ('running', 'paused')
+        `).get(worktree.id) as { count: number };
+
+        const actualAgentCount = agentCountRow.count;
+        const actualActiveAgentCount = activeAgentCountRow.count;
+
+        // Check if counts need correction
+        if (
+          worktree.agentCount !== actualAgentCount ||
+          worktree.activeAgentCount !== actualActiveAgentCount
+        ) {
+          console.log(`[WorktreesRepository] Reconciling counts for worktree ${worktree.id}:`, {
+            before: {
+              agentCount: worktree.agentCount,
+              activeAgentCount: worktree.activeAgentCount,
+            },
+            after: {
+              agentCount: actualAgentCount,
+              activeAgentCount: actualActiveAgentCount,
+            },
+          });
+
+          this.updateCounts(worktree.id, actualAgentCount, actualActiveAgentCount);
+          corrected++;
+        }
+      }
+
+      return corrected;
+    } catch (error) {
+      console.error('[WorktreesRepository] Error reconciling counts:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Map database row to Worktree
    */
   private mapRowToWorktree(row: unknown): Worktree {

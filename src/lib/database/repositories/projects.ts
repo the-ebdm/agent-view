@@ -360,6 +360,74 @@ export class ProjectsRepository {
   }
 
   /**
+   * Reconcile counts for all projects or a specific project
+   * Recalculates agent_count, active_agent_count, and worktree_count from actual data
+   * Returns number of projects corrected
+   */
+  reconcileCounts(projectId?: string): number {
+    if (!this.db) {
+      console.warn('[ProjectsRepository] Database not available, skipping reconcileCounts');
+      return 0;
+    }
+
+    try {
+      // Reconcile for a specific project or all projects
+      const projects = projectId ? [this.findById(projectId)] : this.findAll();
+      let corrected = 0;
+
+      for (const project of projects) {
+        if (!project) continue;
+
+        // Get actual counts from database
+        const agentCountRow = this.db.prepare(`
+          SELECT COUNT(*) as count FROM agents WHERE project_id = ?
+        `).get(project.id) as { count: number };
+
+        const activeAgentCountRow = this.db.prepare(`
+          SELECT COUNT(*) as count FROM agents
+          WHERE project_id = ? AND lifecycle_state IN ('running', 'paused')
+        `).get(project.id) as { count: number };
+
+        const worktreeCountRow = this.db.prepare(`
+          SELECT COUNT(*) as count FROM worktrees WHERE project_id = ?
+        `).get(project.id) as { count: number };
+
+        const actualAgentCount = agentCountRow.count;
+        const actualActiveAgentCount = activeAgentCountRow.count;
+        const actualWorktreeCount = worktreeCountRow.count;
+
+        // Check if counts need correction
+        if (
+          project.agentCount !== actualAgentCount ||
+          project.activeAgentCount !== actualActiveAgentCount ||
+          project.worktreeCount !== actualWorktreeCount
+        ) {
+          console.log(`[ProjectsRepository] Reconciling counts for project ${project.id}:`, {
+            before: {
+              agentCount: project.agentCount,
+              activeAgentCount: project.activeAgentCount,
+              worktreeCount: project.worktreeCount,
+            },
+            after: {
+              agentCount: actualAgentCount,
+              activeAgentCount: actualActiveAgentCount,
+              worktreeCount: actualWorktreeCount,
+            },
+          });
+
+          this.updateCounts(project.id, actualAgentCount, actualActiveAgentCount, actualWorktreeCount);
+          corrected++;
+        }
+      }
+
+      return corrected;
+    } catch (error) {
+      console.error('[ProjectsRepository] Error reconciling counts:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Map database row to Project
    */
   private mapRowToProject(row: unknown): Project {
